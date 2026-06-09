@@ -34,12 +34,12 @@ def banner():
     """ Function Banner """
 
     print(r"""
-     __      __.__          __________         
-    /  \    /  \  |__ _____ \______   \_____   
-    \   \/\/   /  |  \\__  \ |     ___/\__  \  
+     __      __.__          __________
+    /  \    /  \  |__ _____ \______   \_____
+    \   \/\/   /  |  \\__  \ |     ___/\__  \
      \        /|   Y  \/ __ \|    |     / __ \_
       \__/\  / |___|  (____  /____|    (____  /
-           \/       \/     \/               \/ 
+           \/       \/     \/               \/
     ------------- Whatsapp Parser -------------
     """)
 
@@ -48,7 +48,7 @@ def help():
     """ Function show help """
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-    
+
     Usage: python3 whapa.py -h (for help)
     """)
 
@@ -270,7 +270,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Record</th>
-                    <th>Unit / Company</th> 
+                    <th>Unit / Company</th>
                     <th>Examiner</th>
                     <th>Date</th>
                 </tr>
@@ -341,7 +341,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Registro</th>
-                    <th>Unidad / Compañia</th> 
+                    <th>Unidad / Compañia</th>
                     <th>Examinador</th>
                     <th>Fecha</th>
                 </tr>
@@ -408,7 +408,7 @@ def index_report(obj, html):
     <!-- Custom styles for this template -->
     <link href="./cfg/chat.css" rel="stylesheet">
 </head>
-    
+
 <style>
 table {
 font-family: arial, sans-serif;
@@ -428,7 +428,7 @@ background-color: #dddddd;
     width: 100%;
 }
 </style>
-    
+
 <body  background="./cfg/background-index.png">
     <!-- Fixed navbar -->
         <div class="containerindex theme-showcase">
@@ -1623,7 +1623,7 @@ def messages(consult, rows, report_html, local):
                         elif (report_name == "System Message") or (report_name == "Mensaje de Sistema"):
                             rep_med += """
             <li>
-                <div class="bubble-system"> 
+                <div class="bubble-system">
                     <span class="time-system round">""" + report_time + "&nbsp" + report_status + """</span><br>
                     <span class="person-System">""" + report_msj + """</span><br>
                 </div>
@@ -1631,7 +1631,7 @@ def messages(consult, rows, report_html, local):
                         else:
                             rep_med += """
             <li>
-                <div class="bubble"> 
+                <div class="bubble">
                     <span class="personName">""" + report_name + """</span><br><br>
                     <span class="personSay">""" + report_msj + """</span><br>
                     <span class="time round">""" + report_time + "&nbsp" + report_status + """</span><br>
@@ -1772,7 +1772,7 @@ def info(opt, local):
             if (report_var == 'EN') or (report_var == 'ES'):
                 report_time = time.strftime('%d-%m-%Y %H:%M', time.localtime(data[2] / 1000))
                 rep_med += """  <li>
-                                    <div class="bubble"> 
+                                    <div class="bubble">
                                         <span class="personName">""" + report_name + """</span><br></br>
                                         <span class="personSay">""" + report_msj + """</span>
                                         <span class=" time round ">""" + report_time + "&nbsp" + report_status + """</span>
@@ -2007,21 +2007,25 @@ if __name__ == "__main__":
                     sql_string += " AND messages.media_wa_type = 0 AND messages.status = 6"
                     sql_count += " AND messages.media_wa_type = 0 AND messages.status = 6"
 
+                params = []
                 if args.user_all:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%')"
-                    sql_count += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%')"
+                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
+                    sql_count += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
+                    params.extend(["%" + str(args.user_all) + "%@s.whatsapp.net", "%" + str(args.user_all) + "%"])
                     arg_user = args.user_all
                     report_html = "report_user_all_" + args.user_all + ".html"
 
                 elif args.user:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net'"
-                    sql_count += " AND messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    sql_count += " AND messages.key_remote_jid LIKE ?"
+                    params.append("%" + str(args.user) + "%@s.whatsapp.net")
                     report_html = "report_user_chat_" + args.user + ".html"
                     arg_user = args.user
 
                 elif args.group:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
-                    sql_count += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    sql_count += " AND messages.key_remote_jid LIKE ?"
+                    params.append("%" + str(args.group) + "%")
                     arg_group = args.group
                     if arg_group.split("@")[1] == "g.us":
                         report_html = "report_group_chat_" + args.group + ".html"
@@ -2050,11 +2054,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_html = "report_group_chat_" + i + ".html"
                                 report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = i
                             arg_user = ""
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2068,11 +2072,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_user_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i.split('@')[0]
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2086,18 +2090,18 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "BROADCAST CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_user)
 
-                        sql_consult = cursor.execute(sql_string_copy)
+                        sql_consult = cursor.execute(sql_string_copy, ('%' + i + '%',))
                         messages(sql_consult, result[0], report_html, local)
                         print()
 
@@ -2107,10 +2111,14 @@ if __name__ == "__main__":
                     exit()
 
                 print("Loading data ...")
-                result = cursor.execute(sql_count)
+                # params are added twice, once for count and once for data extraction. Count query has parameters if user_all, user, or group were specified.
+                count_params = params.copy() if (args.user_all or args.user or args.group) else []
+                # Actually, the params array has what we need, but for sql_count we appended to sql_count and for sql_string we appended to sql_string.
+                # So we need to provide the same params if we execute sql_count, and same for sql_string.
+                result = cursor.execute(sql_count, tuple(count_params))
                 result = cursor.fetchone()
                 print("Number of messages: {}".format(str(result[0])))
-                sql_consult = cursor.execute(sql_string)
+                sql_consult = cursor.execute(sql_string, tuple(count_params))
                 messages(sql_consult, result[0], report_html, local)
                 print("\n[i] Finished")
 
@@ -2153,21 +2161,25 @@ if __name__ == "__main__":
                     epoch_end = 1000 * int(time.mktime(time.strptime(args.time_end, '%d-%m-%Y %H:%M')))
 
                 sql_string = ""
+                params = []
                 if args.user_all:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' )"
+                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
+                    params.extend(["%" + str(args.user_all) + "%@s.whatsapp.net", "%" + str(args.user_all) + "%@s.whatsapp.net"])
                 elif args.user:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net')"
+                    sql_string += " AND (messages.key_remote_jid LIKE ?)"
+                    params.append("%" + str(args.user) + "%@s.whatsapp.net")
                 elif args.group:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    params.append("%" + str(args.group) + "%")
 
                 sql_count = "SELECT COUNT(*) FROM messages LEFT JOIN message_thumbnails ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp" \
                             " BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                cursor.execute(sql_count)
+                cursor.execute(sql_count, tuple(params))
                 result = cursor.fetchone()
                 print(result[0], "Images found")
                 sql_string_extract = "SELECT messages.key_id, messages.media_wa_type, messages.thumb_image, messages.raw_data, messages.timestamp, message_thumbnails.thumbnail, messages.key_remote_jid, messages.remote_resource, messages._id FROM messages LEFT JOIN message_thumbnails " \
                                      "ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                sql_consult_extract = cursor.execute(sql_string_extract)
+                sql_consult_extract = cursor.execute(sql_string_extract, tuple(params))
                 extract(sql_consult_extract, result[0], local)
             except Exception as e:
                 print("Error extracting:", e)

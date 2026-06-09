@@ -28,7 +28,7 @@ import base64
 import tarfile
 import shutil
 import argparse
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from Crypto.Cipher import AES
 
 def banner():
     print(r"""
@@ -102,8 +102,8 @@ def decrypt_enc(path, out_path, key):
         print(f"[-] HMAC verification failed for {path}")
         return False
         
-    d = Cipher(algorithms.AES(enc_key), modes.CBC(iv)).decryptor()
-    pt = d.update(ct) + d.finalize()
+    d = AES.new(enc_key, mode=AES.MODE_CBC, iv=iv)
+    pt = d.decrypt(ct)
     pad = pt[-1]
     if 1 <= pad <= 16 and pt[-pad:] == bytes([pad])*pad: 
         pt = pt[:-pad]
@@ -159,8 +159,8 @@ def decrypt_media_entry(entry_bytes, tar_key, entry_id_32):
     if not hmac.compare_digest(calc, tag):
         return None
         
-    d = Cipher(algorithms.AES(enc_key), modes.CBC(iv)).decryptor()
-    pt = d.update(ct) + d.finalize()
+    d = AES.new(enc_key, mode=AES.MODE_CBC, iv=iv)
+    pt = d.decrypt(ct)
     if len(pt) < 11 or pt[0] != 0x01:
         return None
         

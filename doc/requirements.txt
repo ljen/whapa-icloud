@@ -10,3 +10,4 @@ selenium-stealth
 ConfigObj
 pycryptodome
 packaging
+urllib3>=1.26.20

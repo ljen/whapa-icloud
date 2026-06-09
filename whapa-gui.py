@@ -10,13 +10,6 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 
-try:
-    import requests
-except ModuleNotFoundError:
-    print("You need requests module to run this script")
-    print("Use this: python -m pip install requests")
-    print("Or: pip install requests")
-    exit(1)
 
 
 

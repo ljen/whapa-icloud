@@ -161,8 +161,8 @@ def gets_name(obj):
 
 def participants(obj):
     """ Function saves all participant in an group or broadcast"""
-    sql_string_group = "SELECT jid, admin FROM group_participants WHERE gjid='" + str(obj) + "'"
-    sql_consult_group = cursor.execute(sql_string_group)
+    sql_string_group = "SELECT jid, admin FROM group_participants WHERE gjid=?"
+    sql_consult_group = cursor.execute(sql_string_group, (str(obj),))
     report_group = ""
     for i in sql_consult_group:
         if i[0]:  # Others

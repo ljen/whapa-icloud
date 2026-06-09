@@ -1,26 +1,36 @@
-from pyicloud import PyiCloudService
-from configparser import ConfigParser
-from os.path import splitext
+#!/usr/bin/env python3
+"""
+whacloud.py - Whatsapp iCloud Extractor (Mac Edition)
+This script extracts and decrypts WhatsApp End-to-End Encrypted (E2EE) backups 
+locally from iCloud Drive on a Mac.
+
+Where are the files located on a Mac?
+macOS automatically syncs iCloud Drive. The WhatsApp backup files are typically located at:
+~/Library/Mobile Documents/57T9237FN3~net~whatsapp~WhatsApp/Accounts/<Phone_Number_or_ID>/backup/
+
+Within this directory, you will find:
+- .enc files (e.g., ChatStorage.sqlite.enc) which contain the SQLite databases and plists.
+- .tar files (e.g., Media.tar, Video.tar) which contain the media.
+
+Note: You need the 64-character hex recovery key to decrypt the backup.
+
+Usage:
+  python3 whacloud.py --key <64_hex_chars> [--output <output_dir>] [--backup-path <path>]
+"""
+
 import sys
-import queue as queue
-import threading
 import os
+import struct
+import hmac
+import hashlib
+import ctypes
+import base64
+import tarfile
+import shutil
 import argparse
-import click
-import time
-
-# Define global variable
-exitFlag = 0
-queueLock = threading.Lock()
-workQueue = queue.Queue(9999999)
-abs_path_file = os.path.abspath(__file__)    # C:\Users\Desktop\whapa\libs\whagodri.py
-abs_path = os.path.split(abs_path_file)[0]   # C:\Users\Desktop\whapa\libs\
-split_path = abs_path.split(os.sep)[:-1]     # ['C:', 'Users', 'Desktop', 'whapa']
-whapa_path = os.path.sep.join(split_path)    # C:\Users\Desktop\whapa
-
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 def banner():
-    """ Function Banner """
     print(r"""
      __      __.__           _________ .__                   .___
     /  \    /  \  |__ _____  \_   ___ \|  |   ____  __ __  __| _/
@@ -29,274 +39,268 @@ def banner():
       \__/\  / |___|  (____  /\______  /____/\____/|____/\____ | 
            \/       \/     \/        \/                       \/ 
 
-    ------------------ Whatsapp iCloud Extractor ----------------""")
-
-
-def help():
-    """ Function show help """
-
-    print("""    ** Author: Ivan Moreno a.k.a B16f00t
-    ** Github: https://github.com/B16f00t
-
-    Usage: python3 whacloud.py -h (for help)
+    ------------------ Whatsapp iCloud Extractor ----------------
     """)
 
+# --- Crypto and LZFSE setup ---
 
-def system_slash(string):
-    """ Change / or \ depend on the OS"""
+def hkdf_legacy(ikm, salt, info, length):
+    if salt is None: 
+        salt = b"\x00"*32
+    prk = hmac.new(salt, ikm, hashlib.sha256).digest()
+    out = b""
+    t = b""
+    i = 0
+    while len(out) < length:
+        t = hmac.new(prk, t + info + bytes([i & 0xff]), hashlib.sha256).digest()
+        out += t
+        i += 1
+    return out[:length]
 
-    if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
-        return string.replace("/", "\\")
+def hkdf_v1(ikm, info, length):
+    return hkdf_legacy(ikm, None, info, length)
 
-    else:
-        return string.replace("\\", "/")
+# LZFSE decoding via macOS native libcompression
+COMPRESSION_LZFSE = 0x801
+try:
+    _lib = ctypes.CDLL("/usr/lib/libcompression.dylib")
+    _lib.compression_decode_buffer.restype = ctypes.c_size_t
+    _lib.compression_decode_buffer.argtypes = [
+        ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_int
+    ]
+except Exception as e:
+    _lib = None
 
+def lzfse_decode(src, hint):
+    if _lib is None:
+        raise RuntimeError("libcompression.dylib not found. This script requires macOS.")
+    cap = max(hint, len(src)) * 2 + 4096
+    while True:
+        dst = ctypes.create_string_buffer(cap)
+        got = _lib.compression_decode_buffer(dst, cap, src, len(src), None, COMPRESSION_LZFSE)
+        if got == 0: 
+            raise RuntimeError("LZFSE decode failed")
+        if got < cap: 
+            return dst.raw[:got]
+        cap *= 2
 
-def createSettingsFile():
-    """ Function that creates the settings file """
+def decrypt_enc(path, out_path, key):
+    with open(path, "rb") as f:
+        data = f.read()
+    n = len(data)
+    if n < 50 or data[0] != 0x83:
+        print(f"[-] Skipping {path} (not a valid 0x83 .enc envelope)")
+        return False
+    enc_key = hkdf_v1(key, b"file", 32)
+    mac_key = hkdf_v1(key, b"file-verify", 32)
+    iv = data[2:18]
+    ct = data[18:n-32]
+    tag = data[n-32:n]
+    
+    calc = hmac.new(mac_key, data[0:n-32], hashlib.sha256).digest()
+    if calc != tag:
+        print(f"[-] HMAC verification failed for {path}")
+        return False
+        
+    d = Cipher(algorithms.AES(enc_key), modes.CBC(iv)).decryptor()
+    pt = d.update(ct) + d.finalize()
+    pad = pt[-1]
+    if 1 <= pad <= 16 and pt[-pad:] == bytes([pad])*pad: 
+        pt = pt[:-pad]
+        
+    if pt[:4] not in (b"pbze", b"pbzx"):
+        print(f"[-] Unexpected container magic for {path}")
+        return False
+        
+    off = 12
+    out = b""
+    while off + 16 <= len(pt):
+        dlen = struct.unpack(">Q", pt[off:off+8])[0]
+        clen = struct.unpack(">Q", pt[off+8:off+16])[0]
+        off += 16
+        payload = pt[off:off+clen]
+        off += clen
+        out += lzfse_decode(payload, dlen)
+        
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print(f"[+] Decrypted {os.path.basename(path)} -> {out_path}")
+    return True
 
-    cfg_file = system_slash(r'{}/cfg/settings.cfg'.format(whapa_path))
-    with open(cfg_file, 'w') as cfg:
-        cfg.write(dedent("""
-            [report]
-            company = ""
-            record = ""
-            unit = ""
-            examiner = ""
-            notes = ""
+def derive_tar_key(backup_key):
+    return hkdf_legacy(backup_key, None, b"tar", 32)
 
-            [google-auth]
-            gmail = alias@gmail.com
-            # Optional. The account password or app password when using 2FA.
-            password  = yourpassword
-            # Optional. Login using the oauth cookie.
-            oauth = ""
-            # Optional. The result of "adb shell settings get secure android_id".
-            android_id  = 0000000000000000
-            # Optional. Enter the backup country code + phonenumber be synchronized, otherwise it synchronizes all backups.
-            # You can specify a list of celnumbr = BackupNumber1, BackupNumber2, ...
-            celnumbr = ""
+def derive_file_block(tar_key, entry_id_32):
+    return hkdf_legacy(tar_key, entry_id_32, b"\x00", 80)
 
-            [icloud-auth] 
-            icloud  = alias@icloud.com
-            passw = yourpassword
-            """).lstrip())
+def _pkcs7_strip(b):
+    pad = b[-1]
+    if 1 <= pad <= 16 and b[-pad:] == bytes([pad])*pad:
+        return b[:-pad]
+    return b
 
+def _safe_join(out_dir, rel):
+    rel = rel.lstrip("/")
+    root = os.path.realpath(out_dir)
+    dst = os.path.realpath(os.path.join(root, rel))
+    if dst != root and not dst.startswith(root + os.sep):
+        raise ValueError(f"Refusing path that escapes output dir: {rel!r}")
+    return dst
 
-def getMultipleFiles(api, files):
-    threadList = ["Thread-01", "Thread-02", "Thread-03", "Thread-04", "Thread-05", "Thread-06", "Thread-07", "Thread-08", "Thread-09", "Thread-10",
-                  "Thread-11", "Thread-12", "Thread-13", "Thread-14", "Thread-15", "Thread-16", "Thread-17", "Thread-18", "Thread-19", "Thread-20",
-                  "Thread-21", "Thread-22", "Thread-23", "Thread-24", "Thread-25", "Thread-26", "Thread-27", "Thread-28", "Thread-29", "Thread-30",
-                  "Thread-31", "Thread-32", "Thread-33", "Thread-34", "Thread-35", "Thread-36", "Thread-37", "Thread-38", "Thread-39", "Thread-40"]
-    threads = []
-    threadID = 1
-    print("[i] Generating threads...")
-    print("[+] Backup name : {}".format(api))
-    for tName in threadList:
-        thread = myThread(threadID, tName, workQueue)
-        thread.start()
-        threads.append(thread)
-        threadID += 1
+def decrypt_media_entry(entry_bytes, tar_key, entry_id_32):
+    blk = derive_file_block(tar_key, entry_id_32)
+    enc_key, mac_key, iv = blk[0:32], blk[32:64], blk[64:80]
+    if len(entry_bytes) < 48 or (len(entry_bytes) - 32) % 16 != 0:
+        return None
+    ct, tag = entry_bytes[:-32], entry_bytes[-32:]
+    
+    calc = hmac.new(mac_key, iv + ct, hashlib.sha256).digest()
+    if not hmac.compare_digest(calc, tag):
+        return None
+        
+    d = Cipher(algorithms.AES(enc_key), modes.CBC(iv)).decryptor()
+    pt = d.update(ct) + d.finalize()
+    if len(pt) < 11 or pt[0] != 0x01:
+        return None
+        
+    etype = pt[1]
+    fnlen = pt[10]
+    if 11 + fnlen > len(pt):
+        return None
+    fn = pt[11:11+fnlen].decode("utf-8", errors="replace").lstrip("/")
+    off = 11 + fnlen
+    
+    if etype == 0x00:
+        clen = struct.unpack(">Q", pt[off:off+8])[0]
+        contents = pt[off+8:off+8+clen]
+        return {"type": 0, "filename": fn, "contents": contents}
+    elif etype == 0x01:
+        core = _pkcs7_strip(pt)
+        src = core[off:].decode("utf-8", errors="replace").lstrip("/")
+        return {"type": 1, "dest": fn, "src": src}
+    return None
 
-    n = 1
-    lenfiles = len(files)
-    queueLock.acquire()
-    if args.output:
-        output = args.output
-    else:
-        output = ""
+def decrypt_media_tar(path, out_dir, backup_key):
+    tar_key = derive_tar_key(backup_key)
+    links = []
+    extracted = 0
+    with tarfile.open(path, "r") as t:
+        for m in t.getmembers():
+            try:
+                entry_id = base64.urlsafe_b64decode(m.name)
+            except Exception:
+                continue
+            if len(entry_id) != 32 or m.size == 0:
+                continue
+            e = decrypt_media_entry(t.extractfile(m).read(), tar_key, entry_id)
+            if not e:
+                continue
+                
+            if e["type"] == 0:
+                dst = _safe_join(out_dir, e["filename"])
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                with open(dst, "wb") as f:
+                    f.write(e["contents"])
+                extracted += 1
+            else:
+                links.append((e["dest"], e["src"]))
+                
+    linked = 0
+    for dest, src in links:
+        try:
+            sp = _safe_join(out_dir, src)
+            dp = _safe_join(out_dir, dest)
+            if os.path.exists(sp):
+                os.makedirs(os.path.dirname(dp), exist_ok=True)
+                shutil.copyfile(sp, dp)
+                linked += 1
+        except ValueError:
+            pass
+            
+    print(f"[+] Decrypted {os.path.basename(path)} -> extracted {extracted} files, {linked} copies")
 
-    for entries in files:
-        file = entries.filename
-        local = (output + file).replace("/", os.path.sep)
-        if os.path.isfile(local):
-            print("    [-] Number: {}/{}  => {} Skipped".format(n, lenfiles, local))
-        else:
-             workQueue.put({'photo': entries, 'local': local, 'now': n, 'lenfiles': lenfiles})
-        n += 1
-
-    queueLock.release()
-    while not workQueue.empty():
-        pass
-
-    global exitFlag
-    exitFlag = 1
-    for t in threads:
-        t.join()
-    print("[i] Downloads finished")
-
-
-class myThread(threading.Thread):
-    def __init__(self, threadID, name, q):
-        threading.Thread.__init__(self)
-        self.threadID = threadID
-        self.name = name
-        self.q = q
-
-    def run(self):
-        process_data(self.name, self.q)
-
-
-def process_data(threadName, q):
-    while not exitFlag:
-        queueLock.acquire()
-        if not workQueue.empty():
-            data = q.get()
-            queueLock.release()
-            getMultipleFilesThread(data['photo'], data['local'], data['now'], data['lenfiles'], threadName)
-            time.sleep(1)
-
-        else:
-            queueLock.release()
-            time.sleep(1)
-
-
-def getMultipleFilesThread(photo, local, now, lenfiles, threadName):
-    os.makedirs(os.path.dirname(local), exist_ok=True)
-    if not os.path.isfile(local):
-        download = photo.download()
-        with open(local, 'wb') as opened_file:
-            opened_file.write(download.raw.read())
-
-        print("    [-] Number: {}/{} - {} => Downloaded: {}".format(now, lenfiles, threadName, local))
-
-    else:
-        print("    [-] Number: {}/{} - {} => Skipped: {}".format(now, lenfiles, threadName, local))
-
-
-def login():
-    """ Get access to Icloud """
-
-    global click
-    api = PyiCloudService(icloud, passw)
-    if api.requires_2fa:
-        print("Two-factor authentication required.")
-        code = input("Enter the code you received of one of your approved devices: ")
-        result = api.validate_2fa_code(code)
-        print("Code validation result: %s" % result)
-
-        if not result:
-            print("Failed to verify security code")
-            sys.exit(1)
-
-        if not api.is_trusted_session:
-            print("Session is not trusted. Requesting trust...")
-            result = api.trust_session()
-            print("Session trust result %s" % result)
-
-            if not result:
-                print("Failed to request trust. You will likely be prompted for the code again in the coming weeks")
-    elif api.requires_2sa:
-        import click
-        print("Two-step authentication required. Your trusted devices are:")
-
-        devices = api.trusted_devices
-        for i, device in enumerate(devices):
-            print(
-                "  %s: %s" % (i, device.get('deviceName',
-                                            "SMS to %s" % device.get('phoneNumber')))
-            )
-
-        device = click.prompt('Which device would you like to use?', default=0)
-        device = devices[device]
-        if not api.send_verification_code(device):
-            print("Failed to send verification code")
-            sys.exit(1)
-
-        code = click.prompt('Please enter validation code')
-        if not api.validate_verification_code(device, code):
-            print("Failed to verify verification code")
-            sys.exit(1)
-
-    print("Devices available:\n {}".format(api.devices))
-    device = click.prompt('Which device would you like to select?', default=0)
-    api.devices[device]
-
-    return api
-
-
-def getConfigs():
-    global icloud, passw
-    config = ConfigParser(interpolation=None)
-    cfg_file = system_slash(r'{}/cfg/settings.cfg'.format(whapa_path))
-
+def is_media_tar(path):
     try:
-        config.read(cfg_file)
-        icloud = config.get('icloud-auth', 'icloud')
-        passw = config.get('icloud-auth', 'passw')
+        with open(path, "rb") as f:
+            head = f.read(265)
+        if head[:1] == b"\x83":
+            return False
+        return head[257:262] == b"ustar"
+    except Exception:
+        return False
 
-    except(ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        quit('The "{}" file is missing or corrupt!'.format(cfg_file))
+def find_mac_backups():
+    base = os.path.expanduser("~/Library/Mobile Documents/57T9237FN3~net~whatsapp~WhatsApp/Accounts")
+    backups = []
+    if os.path.isdir(base):
+        for account in os.listdir(base):
+            backup_path = os.path.join(base, account, "backup")
+            if os.path.isdir(backup_path):
+                backups.append(backup_path)
+    return backups
 
-
-# Initializing
-if __name__ == "__main__":
+def main():
     banner()
-    parser = argparse.ArgumentParser(description="Extract your Whatsapp files from ICloud")
-    user_parser = parser.add_mutually_exclusive_group()
-    user_parser.add_argument("-l", "--list", help="List of all ICloud medias", action="store_true")
-    user_parser.add_argument("-p", "--pull", help="Pull a file from Google Drive")
-    user_parser.add_argument("-s", "--sync", help="Sync all files locally", action="store_true")
-    user_parser.add_argument("-si", "--s_images", help="Sync Images files locally", action="store_true")
-    user_parser.add_argument("-sv", "--s_videos", help="Sync Videos/Audios files locally", action="store_true")
-    parser.add_argument("-o", "--output", help="Output path to save files")
+    parser = argparse.ArgumentParser(
+        description="Extract and decrypt WhatsApp E2E backups from Mac iCloud Drive",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Where are the files located on a Mac?
+macOS automatically syncs iCloud Drive. The WhatsApp backup files are typically located at:
+~/Library/Mobile Documents/57T9237FN3~net~whatsapp~WhatsApp/Accounts/<Phone_Number_or_ID>/backup/
+
+This tool will try to auto-discover them. You can also specify a custom --backup-path.
+"""
+    )
+    parser.add_argument("-k", "--key", required=True, help="64-character hex recovery key")
+    parser.add_argument("-o", "--output", default="whacloud_output", help="Output directory (default: whacloud_output)")
+    parser.add_argument("-b", "--backup-path", help="Path to the backup directory (if not auto-detected)")
+    
     args = parser.parse_args()
-
-    files = []
-    cfg_file = system_slash(r'{}/cfg/settings.cfg'.format(whapa_path))
-    if not os.path.isfile(cfg_file):
-        create_settings_file()
-
-    if len(sys.argv) == 0:
-        help()
-
+    
+    try:
+        key_bytes = bytes.fromhex(args.key)
+        if len(key_bytes) != 32:
+            raise ValueError
+    except ValueError:
+        print("[-] Invalid key format. The key must be exactly 64 hex characters.")
+        sys.exit(1)
+        
+    backups = []
+    if args.backup_path:
+        if os.path.isdir(args.backup_path):
+            backups.append(args.backup_path)
+        else:
+            print(f"[-] Provided backup path is not a directory: {args.backup_path}")
+            sys.exit(1)
     else:
-        getConfigs()
-        api = login()
-        print("[i] Searching...")
-        if args.sync:
-            for entries in api.photos.albums['WhatsApp']:
-                files.append(entries)
+        backups = find_mac_backups()
+        if not backups:
+            print("[-] No WhatsApp backups automatically found on this Mac.")
+            print("    Please ensure iCloud Drive is synced and try providing --backup-path.")
+            sys.exit(1)
+            
+    os.makedirs(args.output, exist_ok=True)
+    
+    for backup in backups:
+        print(f"\n[*] Processing backup directory: {backup}")
+        for root, dirs, files in os.walk(backup):
+            for file in files:
+                filepath = os.path.join(root, file)
+                rel_path = os.path.relpath(filepath, backup)
+                
+                if file.endswith(".enc"):
+                    out_path = os.path.join(args.output, rel_path[:-4]) # strip .enc
+                    decrypt_enc(filepath, out_path, key_bytes)
+                elif file.endswith(".tar") and is_media_tar(filepath):
+                    # extract directly to output dir
+                    decrypt_media_tar(filepath, args.output, key_bytes)
+                elif file == "Backup.plist":
+                    # copy the manifest
+                    shutil.copy(filepath, os.path.join(args.output, file))
+                    
+    print("\n[i] Done. Decrypted files are saved in:", os.path.abspath(args.output))
 
-            getMultipleFiles(api, files)
-
-        elif args.list:
-            print(api.photos.all)
-            api.files.params['dsid'] = api.data['dsInfo']['dsid']
-            print(api.files.dir())
-
-            """
-            for photo in api.photos.albums['WhatsApp']:
-                print(photo, photo.filename)
-            """
-        elif args.s_images:
-            for entries in api.photos.albums['WhatsApp']:
-                file_name, extension = splitext(entries.filename)
-                if (extension == ".jpg") or (extension == ".png"):
-                    files.append(entries)
-
-            getMultipleFiles(api, files)
-
-        elif args.s_videos:
-            for entries in api.photos.albums['WhatsApp']:
-                file_name, extension = splitext(entries.filename)
-                if (extension == ".mp4") or (extension == ".3gp") or (extension == ".mp3"):
-                    files.append(entries)
-
-            getMultipleFiles(api, files)
-
-        elif args.pull:
-            if args.output:
-                file = args.output + str(args.pull)
-                local = file.replace("/", os.path.sep)
-                os.makedirs(os.path.dirname(local), exist_ok=True)
-                if not os.path.isfile(local):
-                    for photo in api.photos.albums['WhatsApp']:
-                        if photo.filename == args.pull:
-                            download = photo.download()
-                            with open(local, 'wb') as opened_file:
-                                opened_file.write(download.raw.read())
-                                print("    [-] Downloaded: {}".format(local))
-
-                else:
-                    print("    [-] Skipped: {}".format(local))
+if __name__ == "__main__":
+    main()

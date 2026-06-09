@@ -26,7 +26,7 @@ Whapa toolset is divided in five tools:
 
 **IPhone**
 ====
-* **Whacloud**  (Whatsapp ICloud Extractor) (Not working)
+* **Whacloud**  (Whatsapp ICloud Extractor)
 * **Whachat**   (Whatsapp Chat Exporter)
 
 
@@ -163,19 +163,17 @@ Edit only the values of the./cfg/settings.cfg file
 WHACLOUD
 =====
 whacloud.py is a tool which allows WhatsApp users on Iphone to extract their backed up WhatsApp data from ICloud.
-BETA TOOL May contain bugs.
 
 Make sure of:
 * Download the latest version of whapa
 * Install the requirements
-* Settings:
+* **macOS is required:** The tool natively accesses iCloud Drive synced files locally.
+* **64-character hex key:** You need the user's recovery key to decrypt the backup. Note that a custom password is not enough; the raw 64-character hexadecimal key is strictly required.
 
-Edit only the values of the./cfg/settings.cfg file
+Usage:
+    python3 whacloud.py --key <64_hex_chars> --output <output_dir>
 
-		[icloud-auth]
-		icloud = alias@icloud.com
-		passw = yourpassword
-	
+* Note: iCloud credentials in `./cfg/settings.cfg` are no longer needed.
 	
 WHACHAT
 =====

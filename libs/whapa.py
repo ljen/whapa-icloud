@@ -521,8 +521,8 @@ background-color: #dddddd;
 def reply(id, local):
     """ Function look out answer messages """
     sql_reply_str = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
-                "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded FROM messages_quotes WHERE _id = " + str(id)
-    sql_answer = cursor_rep.execute(sql_reply_str)
+                "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded FROM messages_quotes WHERE _id = ?"
+    sql_answer = cursor_rep.execute(sql_reply_str, (id,))
     rep = sql_answer.fetchone()
     ans = ""
     reply_msj = ""

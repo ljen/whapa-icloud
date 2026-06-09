@@ -159,10 +159,24 @@ def gets_name(obj):
                 return ""
 
 
+group_participants_cache = None
+
 def participants(obj):
     """ Function saves all participant in an group or broadcast"""
-    sql_string_group = "SELECT jid, admin FROM group_participants WHERE gjid='" + str(obj) + "'"
-    sql_consult_group = cursor.execute(sql_string_group)
+    global group_participants_cache
+    if group_participants_cache is None:
+        group_participants_cache = {}
+        try:
+            sql_string_all = "SELECT gjid, jid, admin FROM group_participants"
+            sql_consult_all = cursor.execute(sql_string_all)
+            for row in sql_consult_all:
+                if row[0] not in group_participants_cache:
+                    group_participants_cache[row[0]] = []
+                group_participants_cache[row[0]].append((row[1], row[2]))
+        except sqlite3.OperationalError:
+            pass
+
+    sql_consult_group = group_participants_cache.get(str(obj), [])
     report_group = ""
     for i in sql_consult_group:
         if i[0]:  # Others

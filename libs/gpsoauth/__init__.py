@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from importlib.metadata import version
 import ssl
-from typing import Any, Iterable
+from typing import Iterable
 
 import requests
 from urllib3.poolmanager import PoolManager  # type: ignore

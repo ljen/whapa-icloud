@@ -2024,21 +2024,25 @@ if __name__ == "__main__":
                     sql_string += " AND messages.media_wa_type = 0 AND messages.status = 6"
                     sql_count += " AND messages.media_wa_type = 0 AND messages.status = 6"
 
+                params = []
                 if args.user_all:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%')"
-                    sql_count += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%')"
+                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
+                    sql_count += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
+                    params.extend(["%" + str(args.user_all) + "%@s.whatsapp.net", "%" + str(args.user_all) + "%"])
                     arg_user = args.user_all
                     report_html = "report_user_all_" + args.user_all + ".html"
 
                 elif args.user:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net'"
-                    sql_count += " AND messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    sql_count += " AND messages.key_remote_jid LIKE ?"
+                    params.append("%" + str(args.user) + "%@s.whatsapp.net")
                     report_html = "report_user_chat_" + args.user + ".html"
                     arg_user = args.user
 
                 elif args.group:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
-                    sql_count += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    sql_count += " AND messages.key_remote_jid LIKE ?"
+                    params.append("%" + str(args.group) + "%")
                     arg_group = args.group
                     if arg_group.split("@")[1] == "g.us":
                         report_html = "report_group_chat_" + args.group + ".html"
@@ -2124,10 +2128,11 @@ if __name__ == "__main__":
                     exit()
 
                 print("Loading data ...")
-                result = cursor.execute(sql_count)
+                count_params = params.copy() if (args.user_all or args.user or args.group) else []
+                result = cursor.execute(sql_count, tuple(count_params))
                 result = cursor.fetchone()
                 print("Number of messages: {}".format(str(result[0])))
-                sql_consult = cursor.execute(sql_string)
+                sql_consult = cursor.execute(sql_string, tuple(count_params))
                 messages(sql_consult, result[0], report_html, local)
                 print("\n[i] Finished")
 

@@ -534,13 +534,18 @@ class MyThread(threading.Thread):
 def process_data(thread_name: str, q: queue.Queue, session: requests.Session, is_dry_run: bool):
     while True:
         data = q.get()
-        get_multiple_files_thread(data['url'], data['local'], data['now'], data['lenfiles'],
-                                data['size'], thread_name, session, is_dry_run=is_dry_run)
+        get_multiple_files_thread(data, thread_name, session, is_dry_run=is_dry_run)
 
 
-def get_multiple_files_thread(url: str, local: str, now: int, len_files: int, size: int, thread_name: str, session: requests.Session,
+def get_multiple_files_thread(file_data: dict, thread_name: str, session: requests.Session,
                               is_dry_run: bool):
     global total_size, num_files
+
+    url = file_data['url']
+    local = file_data['local']
+    now = file_data['now']
+    len_files = file_data['lenfiles']
+    size = file_data['size']
 
     if is_dry_run:
         print("    [-] Skipped (Dry Run): {}".format(local))

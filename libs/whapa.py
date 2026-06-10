@@ -102,7 +102,7 @@ def duration_file(obj):
     seco = obj - ((hour * 3600) + (minu * 60))
     if obj >= 3600:
         obj = (str(hour) + "h " + str(minu) + "m " + str(seco) + "s")
-    elif 60 < obj < 3600:
+    elif 60 <= obj < 3600:
         obj = (str(minu) + "m " + str(seco) + "s")
     else:
         obj = (str(seco) + "s")

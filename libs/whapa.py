@@ -518,6 +518,9 @@ background-color: #dddddd;
     f.close()
 
 
+import functools
+
+@functools.lru_cache(maxsize=2048)
 def reply(id, local):
     """ Function look out answer messages """
     sql_reply_str = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
@@ -1809,7 +1812,7 @@ def info(opt, local):
 
 
 def system_slash(string):
-    """ Change / or \ depend on the OS"""
+    """ Change / or \\ depend on the OS"""
 
     if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
         return string.replace("/", "\\")

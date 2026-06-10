@@ -2170,21 +2170,26 @@ if __name__ == "__main__":
                     epoch_end = 1000 * int(time.mktime(time.strptime(args.time_end, '%d-%m-%Y %H:%M')))
 
                 sql_string = ""
+                sql_params = [epoch_start, epoch_end]
+
                 if args.user_all:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' OR messages.remote_resource LIKE '%" + str(args.user_all) + "%@s.whatsapp.net' )"
+                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ? )"
+                    sql_params.extend(['%' + str(args.user_all) + '%@s.whatsapp.net', '%' + str(args.user_all) + '%@s.whatsapp.net'])
                 elif args.user:
-                    sql_string += " AND (messages.key_remote_jid LIKE '%" + str(args.user) + "%@s.whatsapp.net')"
+                    sql_string += " AND (messages.key_remote_jid LIKE ?)"
+                    sql_params.append('%' + str(args.user) + '%@s.whatsapp.net')
                 elif args.group:
-                    sql_string += " AND messages.key_remote_jid LIKE '%" + str(args.group) + "%'"
+                    sql_string += " AND messages.key_remote_jid LIKE ?"
+                    sql_params.append('%' + str(args.group) + '%')
 
                 sql_count = "SELECT COUNT(*) FROM messages LEFT JOIN message_thumbnails ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp" \
-                            " BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                cursor.execute(sql_count)
+                            " BETWEEN ? AND ? AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
+                cursor.execute(sql_count, tuple(sql_params))
                 result = cursor.fetchone()
                 print(result[0], "Images found")
                 sql_string_extract = "SELECT messages.key_id, messages.media_wa_type, messages.thumb_image, messages.raw_data, messages.timestamp, message_thumbnails.thumbnail, messages.key_remote_jid, messages.remote_resource, messages._id FROM messages LEFT JOIN message_thumbnails " \
-                                     "ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                sql_consult_extract = cursor.execute(sql_string_extract)
+                                     "ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp BETWEEN ? AND ? AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
+                sql_consult_extract = cursor.execute(sql_string_extract, tuple(sql_params))
                 extract(sql_consult_extract, result[0], local)
             except Exception as e:
                 print("Error extracting:", e)

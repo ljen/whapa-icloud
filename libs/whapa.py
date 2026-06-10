@@ -34,12 +34,12 @@ def banner():
     """ Function Banner """
 
     print(r"""
-     __      __.__          __________
-    /  \    /  \  |__ _____ \______   \_____
-    \   \/\/   /  |  \\__  \ |     ___/\__  \
+     __      __.__          __________         
+    /  \    /  \  |__ _____ \______   \_____   
+    \   \/\/   /  |  \\__  \ |     ___/\__  \  
      \        /|   Y  \/ __ \|    |     / __ \_
       \__/\  / |___|  (____  /____|    (____  /
-           \/       \/     \/               \/
+           \/       \/     \/               \/ 
     ------------- Whatsapp Parser -------------
     """)
 
@@ -48,7 +48,7 @@ def help():
     """ Function show help """
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-
+    
     Usage: python3 whapa.py -h (for help)
     """)
 
@@ -159,10 +159,24 @@ def gets_name(obj):
                 return ""
 
 
+group_participants_cache = None
+
 def participants(obj):
     """ Function saves all participant in an group or broadcast"""
-    sql_string_group = "SELECT jid, admin FROM group_participants WHERE gjid='" + str(obj) + "'"
-    sql_consult_group = cursor.execute(sql_string_group)
+    global group_participants_cache
+    if group_participants_cache is None:
+        group_participants_cache = {}
+        try:
+            sql_string_all = "SELECT gjid, jid, admin FROM group_participants"
+            sql_consult_all = cursor.execute(sql_string_all)
+            for row in sql_consult_all:
+                if row[0] not in group_participants_cache:
+                    group_participants_cache[row[0]] = []
+                group_participants_cache[row[0]].append((row[1], row[2]))
+        except sqlite3.OperationalError:
+            pass
+
+    sql_consult_group = group_participants_cache.get(str(obj), [])
     report_group = ""
     for i in sql_consult_group:
         if i[0]:  # Others
@@ -270,7 +284,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Record</th>
-                    <th>Unit / Company</th>
+                    <th>Unit / Company</th> 
                     <th>Examiner</th>
                     <th>Date</th>
                 </tr>
@@ -341,7 +355,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Registro</th>
-                    <th>Unidad / Compañia</th>
+                    <th>Unidad / Compañia</th> 
                     <th>Examinador</th>
                     <th>Fecha</th>
                 </tr>
@@ -408,7 +422,7 @@ def index_report(obj, html):
     <!-- Custom styles for this template -->
     <link href="./cfg/chat.css" rel="stylesheet">
 </head>
-
+    
 <style>
 table {
 font-family: arial, sans-serif;
@@ -428,7 +442,7 @@ background-color: #dddddd;
     width: 100%;
 }
 </style>
-
+    
 <body  background="./cfg/background-index.png">
     <!-- Fixed navbar -->
         <div class="containerindex theme-showcase">
@@ -518,6 +532,9 @@ background-color: #dddddd;
     f.close()
 
 
+import functools
+
+@functools.lru_cache(maxsize=2048)
 def reply(id, local):
     """ Function look out answer messages """
     sql_reply_str = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
@@ -1623,7 +1640,7 @@ def messages(consult, rows, report_html, local):
                         elif (report_name == "System Message") or (report_name == "Mensaje de Sistema"):
                             rep_med += """
             <li>
-                <div class="bubble-system">
+                <div class="bubble-system"> 
                     <span class="time-system round">""" + report_time + "&nbsp" + report_status + """</span><br>
                     <span class="person-System">""" + report_msj + """</span><br>
                 </div>
@@ -1631,7 +1648,7 @@ def messages(consult, rows, report_html, local):
                         else:
                             rep_med += """
             <li>
-                <div class="bubble">
+                <div class="bubble"> 
                     <span class="personName">""" + report_name + """</span><br><br>
                     <span class="personSay">""" + report_msj + """</span><br>
                     <span class="time round">""" + report_time + "&nbsp" + report_status + """</span><br>
@@ -1694,13 +1711,13 @@ def info(opt, local):
             epoch_end = 1000 * int(time.mktime(time.strptime(args.time_end, '%d-%m-%Y %H:%M')))
 
         sql_string = "SELECT jid.raw_string, call_log.from_me, call_log.timestamp, call_log.video_call, call_log.duration FROM call_log LEFT JOIN jid ON call_log.jid_row_id = jid._id WHERE " \
-                     " call_log.timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + ";"
-        sql_count = "SELECT count(*) FROM call_log WHERE timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + ";"
+                     " call_log.timestamp BETWEEN ? AND ?;"
+        sql_count = "SELECT count(*) FROM call_log WHERE timestamp BETWEEN ? AND ?;"
         print("Loading data ...")
-        result = cursor.execute(sql_count)
+        result = cursor.execute(sql_count, (epoch_start, epoch_end))
         result = cursor.fetchone()
         print("Number of messages: {}".format(str(result[0])))
-        consult = cursor.execute(sql_string)
+        consult = cursor.execute(sql_string, (epoch_start, epoch_end))
         for data in consult:
             if report_var == 'None':
                 message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
@@ -1772,7 +1789,7 @@ def info(opt, local):
             if (report_var == 'EN') or (report_var == 'ES'):
                 report_time = time.strftime('%d-%m-%Y %H:%M', time.localtime(data[2] / 1000))
                 rep_med += """  <li>
-                                    <div class="bubble">
+                                    <div class="bubble"> 
                                         <span class="personName">""" + report_name + """</span><br></br>
                                         <span class="personSay">""" + report_msj + """</span>
                                         <span class=" time round ">""" + report_time + "&nbsp" + report_status + """</span>
@@ -1809,7 +1826,7 @@ def info(opt, local):
 
 
 def system_slash(string):
-    """ Change / or \ depend on the OS"""
+    """ Change / or \\ depend on the OS"""
 
     if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
         return string.replace("/", "\\")

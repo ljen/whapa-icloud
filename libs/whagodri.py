@@ -38,13 +38,16 @@ class WaBackup:
     """
 
     def __init__(self, gmail, password, android_id, celnumbr, oauth_token):
-        master_token = None
+        master_token = self._get_master_token(gmail, password, android_id, oauth_token)
+        self._authenticate_drive(gmail, master_token, android_id, celnumbr)
+
+    def _get_master_token(self, gmail, password, android_id, oauth_token):
         if oauth_token:
             print("Exchanging web oauth_token to master token...")
             token = gpsoauth.exchange_token(gmail, oauth_token, android_id)
             if "Token" in token:
                 print("Granted.")
-                master_token = token['Token']
+                return token['Token']
             else:
                 error(token)
                 quit()
@@ -52,72 +55,7 @@ class WaBackup:
             print("Requesting access to Google...")
             token = gpsoauth.perform_master_login(email=gmail, password=password, android_id=android_id)
             if token.get("Error") == "NeedsBrowser":
-                error(token)
-                print("\n")
-                for remaining in range(15, -1, -1):
-                    sys.stdout.write("\r")
-                    sys.stdout.write("{:2d} seconds remaining to try to gain access through a web browser. Press Ctrl+C to cancel".format(remaining))
-                    sys.stdout.flush()
-                    time.sleep(1)
-
-                url = token.get("Url")
-                options = Options()
-                options.add_argument("--window-size=720,720")
-                #os.environ['GH_TOKEN'] = ""
-                try:
-                    if operating_system() == "Windows":
-                        driver = webdriver.Chrome(service=Service("chromedriver.exe"), options=options)
-                    elif operating_system() == "MacOs M1":
-                        driver = webdriver.Chrome(service=Service("chromedriverM1"), options=options)
-                    elif operating_system() == "MacOs":
-                        driver = webdriver.Chrome(service=Service("chromedriverMac"), options=options)
-                    else:
-                        driver = webdriver.Chrome(service=Service("chromedriver"), options=options)
-                except:
-                    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-                stealth(driver,
-                        languages=["en-US", "en"],
-                        vendor="Google Inc.",
-                        platform="Win32",
-                        webgl_vendor="Intel Inc.",
-                        renderer="Intel Iris OpenGL Engine",
-                        fix_hairline=True,
-                        )
-
-                driver.get(url)
-                for remaining in range(30, -1, -1):
-                    sys.stdout.write("\r")
-                    sys.stdout.write("{:2d} seconds remaining to login to your Google Account".format(remaining))
-                    sys.stdout.flush()
-                    time.sleep(1)
-
-                sys.stdout.write("\nFinished!\n")
-                cookies = driver.get_cookies()
-                for cookie in cookies:
-                    if cookie.get("name") == 'oauth_token':
-                        oauth_token = cookie.get("value")
-                        print("A valid token has been obtained.")
-                        break
-
-                driver.close()
-                if not oauth_token:
-                    print("No valid token has been obtained.")
-                    exit()
-
-                print("Requesting access to Google by OAuth cookie...")
-                token = gpsoauth.perform_master_login_oauth(email=gmail, oauth_token=oauth_token, android_id=android_id)
-                if "Token" not in token:
-                    error(token)
-                    quit()
-                else:
-                    print("Granted.")
-                    print("Writing Token in your settings.cfg file...")
-                    cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
-                    config = ConfigObj(cfg_file, interpolation=None)
-                    config['google-auth']['oauth'] = token['Token']
-                    config.write()
-                    oauth_token = token['Token']
+                oauth_token = self._handle_browser_login(gmail, android_id, token)
             else:
                 if "Token" not in token:
                     error(token)
@@ -128,8 +66,78 @@ class WaBackup:
 
             # This password auth logic is wrong and needs fixing
             # But for now let's just do it like it was previously
-            master_token = oauth_token
+            return oauth_token
 
+    def _handle_browser_login(self, gmail, android_id, token):
+        error(token)
+        print("\n")
+        for remaining in range(15, -1, -1):
+            sys.stdout.write("\r")
+            sys.stdout.write("{:2d} seconds remaining to try to gain access through a web browser. Press Ctrl+C to cancel".format(remaining))
+            sys.stdout.flush()
+            time.sleep(1)
+
+        url = token.get("Url")
+        options = Options()
+        options.add_argument("--window-size=720,720")
+        #os.environ['GH_TOKEN'] = ""
+        try:
+            if operating_system() == "Windows":
+                driver = webdriver.Chrome(service=Service("chromedriver.exe"), options=options)
+            elif operating_system() == "MacOs M1":
+                driver = webdriver.Chrome(service=Service("chromedriverM1"), options=options)
+            elif operating_system() == "MacOs":
+                driver = webdriver.Chrome(service=Service("chromedriverMac"), options=options)
+            else:
+                driver = webdriver.Chrome(service=Service("chromedriver"), options=options)
+        except:
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+        stealth(driver,
+                languages=["en-US", "en"],
+                vendor="Google Inc.",
+                platform="Win32",
+                webgl_vendor="Intel Inc.",
+                renderer="Intel Iris OpenGL Engine",
+                fix_hairline=True,
+                )
+
+        driver.get(url)
+        for remaining in range(30, -1, -1):
+            sys.stdout.write("\r")
+            sys.stdout.write("{:2d} seconds remaining to login to your Google Account".format(remaining))
+            sys.stdout.flush()
+            time.sleep(1)
+
+        sys.stdout.write("\nFinished!\n")
+        cookies = driver.get_cookies()
+        oauth_token = None
+        for cookie in cookies:
+            if cookie.get("name") == 'oauth_token':
+                oauth_token = cookie.get("value")
+                print("A valid token has been obtained.")
+                break
+
+        driver.close()
+        if not oauth_token:
+            print("No valid token has been obtained.")
+            exit()
+
+        print("Requesting access to Google by OAuth cookie...")
+        login_token = gpsoauth.perform_master_login_oauth(email=gmail, oauth_token=oauth_token, android_id=android_id)
+        if "Token" not in login_token:
+            error(login_token)
+            quit()
+        else:
+            print("Granted.")
+            print("Writing Token in your settings.cfg file...")
+            cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+            config = ConfigObj(cfg_file, interpolation=None)
+            config['google-auth']['oauth'] = login_token['Token']
+            config.write()
+            return login_token['Token']
+
+    def _authenticate_drive(self, gmail, master_token, android_id, celnumbr):
         print("Requesting authentication for Google Drive...")
         auth = gpsoauth.perform_oauth(
             gmail,
@@ -526,13 +534,18 @@ class MyThread(threading.Thread):
 def process_data(thread_name: str, q: queue.Queue, session: requests.Session, is_dry_run: bool):
     while True:
         data = q.get()
-        get_multiple_files_thread(data['url'], data['local'], data['now'], data['lenfiles'],
-                                data['size'], thread_name, session, is_dry_run=is_dry_run)
+        get_multiple_files_thread(data, thread_name, session, is_dry_run=is_dry_run)
 
 
-def get_multiple_files_thread(url: str, local: str, now: int, len_files: int, size: int, thread_name: str, session: requests.Session,
+def get_multiple_files_thread(file_data: dict, thread_name: str, session: requests.Session,
                               is_dry_run: bool):
     global total_size, num_files
+
+    url = file_data['url']
+    local = file_data['local']
+    now = file_data['now']
+    len_files = file_data['lenfiles']
+    size = file_data['size']
 
     if is_dry_run:
         print("    [-] Skipped (Dry Run): {}".format(local))

@@ -1,9 +1,5 @@
 import unittest
-import sys
-import os
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'libs')))
-from whachat import startsWithDateTimeiOS
+from libs.whachat import startsWithDateTimeiOS, getDataPointiOS
 
 class TestWhachat(unittest.TestCase):
     def test_startsWithDateTimeiOS_valid(self):
@@ -38,6 +34,39 @@ class TestWhachat(unittest.TestCase):
         self.assertFalse(startsWithDateTimeiOS("[]"))
         # Multiple brackets
         self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] [Jordi]: Hello"))
+
+class TestGetDataPointiOS(unittest.TestCase):
+    def test_english_format(self):
+        line = "[25/8/20, 10:02:14] Jordi Subinspector Tecnologicos: Por qué no vieron los maniquiey"
+        date, time, author, message = getDataPointiOS(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02:14")
+        self.assertEqual(author, "Jordi Subinspector Tecnologicos")
+        self.assertEqual(message, "Por qué no vieron los maniquiey")
+
+    def test_spanish_format(self):
+        line = "[25/8/20 10:02:14] Jordi Subinspector: Hola"
+        date, time, author, message = getDataPointiOS(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02:14")
+        self.assertEqual(author, "Jordi Subinspector")
+        self.assertEqual(message, "Hola")
+
+    def test_no_author(self):
+        line = "[25/8/20, 10:02:14] Messages to this group are now secured with end-to-end encryption."
+        date, time, author, message = getDataPointiOS(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02:14")
+        self.assertIsNone(author)
+        self.assertEqual(message, "Messages to this group are now secured with end-to-end encryption.")
+
+    def test_phone_number_author(self):
+        line = "[25/8/20, 10:02:14] +34 666 555 444: Hello"
+        date, time, author, message = getDataPointiOS(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02:14")
+        self.assertEqual(author, "+34 666 555 444")
+        self.assertEqual(message, "Hello")
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,53 @@
+import pytest
 import unittest
-from libs.whachat import getDataPointiOS
+from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS
+
+def test_startsWithDateTimeAndroid_valid():
+    assert startsWithDateTimeAndroid("24/5/18 14:25 - Sergio F: No se tío")
+    assert startsWithDateTimeAndroid("24.07.21, 10:15 - Hello")
+    assert startsWithDateTimeAndroid("12/12/2021 14:25 - Hey")
+    assert startsWithDateTimeAndroid("1/1/20 1:2:3 - Msg")
+    assert startsWithDateTimeAndroid("24/5/18 14:25 -")
+
+def test_startsWithDateTimeAndroid_invalid():
+    assert not startsWithDateTimeAndroid("Not a date - Hello")
+    assert not startsWithDateTimeAndroid("24/5/18 14:25")
+    assert not startsWithDateTimeAndroid("")
+    assert not startsWithDateTimeAndroid("Sergio F: No se tío")
+
+class TestWhachat(unittest.TestCase):
+    def test_startsWithDateTimeiOS_valid(self):
+        # Test basic format
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] Jordi: Hello"))
+        # Test with dots
+        self.assertTrue(startsWithDateTimeiOS("[25.08.20, 19:52:23] Jordi: Hello"))
+        # Test without comma
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20 10:02:14] Jordi: Hello"))
+        # Test without message part
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] "))
+        # Test valid matching behavior based on current regex
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20] Jordi: Hello"))
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20,] Jordi: Hello"))
+
+    def test_startsWithDateTimeiOS_invalid(self):
+        # Missing bracket
+        self.assertFalse(startsWithDateTimeiOS("25/8/20, 19:52:23]"))
+        self.assertFalse(startsWithDateTimeiOS("[25/8/20, 19:52:23"))
+        # Missing both brackets
+        self.assertFalse(startsWithDateTimeiOS("25/8/20, 19:52:23"))
+        # Completely invalid
+        self.assertFalse(startsWithDateTimeiOS("Hello world"))
+        self.assertFalse(startsWithDateTimeiOS("[]"))
+        # Invalid date format (alphabetic)
+        self.assertFalse(startsWithDateTimeiOS("[a/b/c, 19:52:23] Jordi: Hello"))
+
+    def test_startsWithDateTimeiOS_edge_cases(self):
+        # Empty string
+        self.assertFalse(startsWithDateTimeiOS(""))
+        # Only brackets
+        self.assertFalse(startsWithDateTimeiOS("[]"))
+        # Multiple brackets
+        self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] [Jordi]: Hello"))
 
 class TestGetDataPointiOS(unittest.TestCase):
     def test_english_format(self):

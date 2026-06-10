@@ -56,12 +56,12 @@ def banner():
     """ Function Banner """
 
     print("""
-     __      __.__                                               
-    /  \    /  \  |__ _____    _____   ___________  ____   ____  
-    \   \/\/   /  |  \\\\__  \  /     \_/ __ \_  __ \/ ___\_/ __ \ 
-     \        /|   Y  \/ __ \|  Y Y  \  ___/|  | \/ /_/  >  ___/ 
+     __      __.__
+    /  \    /  \  |__ _____    _____   ___________  ____   ____
+    \   \/\/   /  |  \\\\__  \  /     \_/ __ \_  __ \/ ___\_/ __ \
+     \        /|   Y  \/ __ \|  Y Y  \  ___/|  | \/ /_/  >  ___/
       \__/\  / |___|  (____  /__|_|  /\___  >__|  \___  / \___  >
-           \/       \/     \/      \/     \/     /_____/      \/ 
+           \/       \/     \/      \/     \/     /_____/      \/
     ------------------------ Whatsapp Merger -----------------------
     """)
 
@@ -72,7 +72,7 @@ def help():
     print("""
     ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-    
+
     Usage: python whamerge.py -h (for help)
     """)
 
@@ -131,10 +131,10 @@ def merge(db_path, db_name):
                 # Open write connection
                 with sqlite3.connect(db_name) as output:
                     cursor_write = output.cursor()
-                    
+
                 cursor_write.execute("SELECT _id FROM messages;")
                 ids_message_write = cursor_write.fetchall()
-                
+
                 cursor_write.execute("SELECT _id FROM chat;")
                 ids_chatlist_write = cursor_write.fetchall()
 
@@ -148,10 +148,10 @@ def merge(db_path, db_name):
                 # Open read connection
                 with sqlite3.connect(db_path + filename) as orig:
                     cursor_read = orig.cursor()
-                    
+
                 cursor_read.execute("SELECT _id FROM messages;")
                 ids_message_read = cursor_read.fetchall()
-                
+
                 cursor_read.execute("SELECT _id FROM chat;")
                 ids_chatlist_read = cursor_read.fetchall()
 
@@ -213,25 +213,23 @@ def merge(db_path, db_name):
 
                 # Insert the elements into the database
                 try:
-                    for msg in elements_message_insert:
+                    if elements_message_insert:
                         insert_query = "INSERT INTO messages(" + str_message_cols + ") VALUES (" + ','.join('?' for x in range(0, len(messages_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_message_insert)
 
-                    for msg in elements_chatlist_insert:
+                    if elements_chatlist_insert:
                         insert_query = "INSERT INTO chat(" + str_chatlist_cols + ") VALUES (" + ','.join('?' for x in range(0, len(chatlist_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_chatlist_insert)
 
-                    for msg in elements_quote_insert:
+                    if elements_quote_insert:
                         insert_query = "INSERT INTO messages_quotes(" + str_quote_cols + ") VALUES (" + ','.join('?' for x in range(0, len(quote_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_quote_insert)
 
-                    for msg in elements_thumb_insert:
+                    if elements_thumb_insert:
                         insert_query = "INSERT INTO message_thumbnails(" + str_thumb_cols + ") VALUES (" + ','.join('?' for x in range(0, len(thumbnail_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_thumb_insert)
+
+                    output.commit()
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)
@@ -389,29 +387,27 @@ def merge_win(db_path, db_name):
 
                 # Insert the elements into the database
                 try:
-                    for msg in elements_message_insert:
+                    if elements_message_insert:
                         insert_query = "INSERT INTO messages(" + str_message_cols + ") VALUES (" + ','.join(
                             '?' for x in range(0, len(messages_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_message_insert)
 
-                    for msg in elements_chatlist_insert:
+                    if elements_chatlist_insert:
                         insert_query = "INSERT INTO chat(" + str_chatlist_cols + ") VALUES (" + ','.join(
                             '?' for x in range(0, len(chatlist_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_chatlist_insert)
 
-                    for msg in elements_quote_insert:
+                    if elements_quote_insert:
                         insert_query = "INSERT INTO messages_quotes(" + str_quote_cols + ") VALUES (" + ','.join(
                             '?' for x in range(0, len(quote_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_quote_insert)
 
-                    for msg in elements_thumb_insert:
+                    if elements_thumb_insert:
                         insert_query = "INSERT INTO message_thumbnails(" + str_thumb_cols + ") VALUES (" + ','.join(
                             '?' for x in range(0, len(thumbnail_columns))) + ")"
-                        cursor_write.execute(insert_query, msg)
-                        output.commit()
+                        cursor_write.executemany(insert_query, elements_thumb_insert)
+
+                    output.commit()
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)

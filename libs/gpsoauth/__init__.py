@@ -1,10 +1,9 @@
 """A python client library for Google Play Services OAuth."""
-from __future__ import annotations
 
 from collections.abc import MutableMapping
 from importlib.metadata import version
 import ssl
-from typing import Any, Iterable
+from typing import Iterable
 
 import requests
 from urllib3.poolmanager import PoolManager  # type: ignore
@@ -12,7 +11,10 @@ from urllib3.util import ssl_
 
 from . import google
 
-__version__ = version(__package__)
+try:
+    __version__ = version(__package__)
+except Exception:
+    __version__ = "unknown"
 
 SSL_DEFAULT_CIPHERS = None
 if version("urllib3") < "2.0.0a1":

@@ -34,12 +34,12 @@ def banner():
     """ Function Banner """
 
     print(r"""
-     __      __.__          __________
-    /  \    /  \  |__ _____ \______   \_____
-    \   \/\/   /  |  \\__  \ |     ___/\__  \
+     __      __.__          __________         
+    /  \    /  \  |__ _____ \______   \_____   
+    \   \/\/   /  |  \\__  \ |     ___/\__  \  
      \        /|   Y  \/ __ \|    |     / __ \_
       \__/\  / |___|  (____  /____|    (____  /
-           \/       \/     \/               \/
+           \/       \/     \/               \/ 
     ------------- Whatsapp Parser -------------
     """)
 
@@ -48,7 +48,7 @@ def help():
     """ Function show help """
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-
+    
     Usage: python3 whapa.py -h (for help)
     """)
 
@@ -102,7 +102,7 @@ def duration_file(obj):
     seco = obj - ((hour * 3600) + (minu * 60))
     if obj >= 3600:
         obj = (str(hour) + "h " + str(minu) + "m " + str(seco) + "s")
-    elif 60 < obj < 3600:
+    elif 60 <= obj < 3600:
         obj = (str(minu) + "m " + str(seco) + "s")
     else:
         obj = (str(seco) + "s")
@@ -284,7 +284,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Record</th>
-                    <th>Unit / Company</th>
+                    <th>Unit / Company</th> 
                     <th>Examiner</th>
                     <th>Date</th>
                 </tr>
@@ -355,7 +355,7 @@ background-color: #cdcdcd;
                 <h1 align="left"><img src="./cfg/logo.png" height=128 width=128 align="center">&nbsp;""" + company + """</h1>
                 <tr>
                     <th>Registro</th>
-                    <th>Unidad / Compañia</th>
+                    <th>Unidad / Compañia</th> 
                     <th>Examinador</th>
                     <th>Fecha</th>
                 </tr>
@@ -422,7 +422,7 @@ def index_report(obj, html):
     <!-- Custom styles for this template -->
     <link href="./cfg/chat.css" rel="stylesheet">
 </head>
-
+    
 <style>
 table {
 font-family: arial, sans-serif;
@@ -442,7 +442,7 @@ background-color: #dddddd;
     width: 100%;
 }
 </style>
-
+    
 <body  background="./cfg/background-index.png">
     <!-- Fixed navbar -->
         <div class="containerindex theme-showcase">
@@ -1640,7 +1640,7 @@ def messages(consult, rows, report_html, local):
                         elif (report_name == "System Message") or (report_name == "Mensaje de Sistema"):
                             rep_med += """
             <li>
-                <div class="bubble-system">
+                <div class="bubble-system"> 
                     <span class="time-system round">""" + report_time + "&nbsp" + report_status + """</span><br>
                     <span class="person-System">""" + report_msj + """</span><br>
                 </div>
@@ -1648,7 +1648,7 @@ def messages(consult, rows, report_html, local):
                         else:
                             rep_med += """
             <li>
-                <div class="bubble">
+                <div class="bubble"> 
                     <span class="personName">""" + report_name + """</span><br><br>
                     <span class="personSay">""" + report_msj + """</span><br>
                     <span class="time round">""" + report_time + "&nbsp" + report_status + """</span><br>
@@ -1789,7 +1789,7 @@ def info(opt, local):
             if (report_var == 'EN') or (report_var == 'ES'):
                 report_time = time.strftime('%d-%m-%Y %H:%M', time.localtime(data[2] / 1000))
                 rep_med += """  <li>
-                                    <div class="bubble">
+                                    <div class="bubble"> 
                                         <span class="personName">""" + report_name + """</span><br></br>
                                         <span class="personSay">""" + report_msj + """</span>
                                         <span class=" time round ">""" + report_time + "&nbsp" + report_status + """</span>
@@ -2071,11 +2071,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_html = "report_group_chat_" + i + ".html"
                                 report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = i
                             arg_user = ""
-                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
+                            result = cursor.execute(sql_count_copy)
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2089,11 +2089,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_user_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = ""
                             arg_user = i.split('@')[0]
-                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
+                            result = cursor.execute(sql_count_copy)
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2107,18 +2107,18 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = ""
                             arg_user = i
-                            result = cursor.execute(sql_count_copy, ('%' + i + '%',))
+                            result = cursor.execute(sql_count_copy)
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "BROADCAST CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_user)
 
-                        sql_consult = cursor.execute(sql_string_copy, ('%' + i + '%',))
+                        sql_consult = cursor.execute(sql_string_copy)
                         messages(sql_consult, result[0], report_html, local)
                         print()
 
@@ -2128,10 +2128,7 @@ if __name__ == "__main__":
                     exit()
 
                 print("Loading data ...")
-                # params are added twice, once for count and once for data extraction. Count query has parameters if user_all, user, or group were specified.
                 count_params = params.copy() if (args.user_all or args.user or args.group) else []
-                # Actually, the params array has what we need, but for sql_count we appended to sql_count and for sql_string we appended to sql_string.
-                # So we need to provide the same params if we execute sql_count, and same for sql_string.
                 result = cursor.execute(sql_count, tuple(count_params))
                 result = cursor.fetchone()
                 print("Number of messages: {}".format(str(result[0])))
@@ -2178,25 +2175,26 @@ if __name__ == "__main__":
                     epoch_end = 1000 * int(time.mktime(time.strptime(args.time_end, '%d-%m-%Y %H:%M')))
 
                 sql_string = ""
-                params = []
+                sql_params = [epoch_start, epoch_end]
+
                 if args.user_all:
-                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
-                    params.extend(["%" + str(args.user_all) + "%@s.whatsapp.net", "%" + str(args.user_all) + "%@s.whatsapp.net"])
+                    sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ? )"
+                    sql_params.extend(['%' + str(args.user_all) + '%@s.whatsapp.net', '%' + str(args.user_all) + '%@s.whatsapp.net'])
                 elif args.user:
                     sql_string += " AND (messages.key_remote_jid LIKE ?)"
-                    params.append("%" + str(args.user) + "%@s.whatsapp.net")
+                    sql_params.append('%' + str(args.user) + '%@s.whatsapp.net')
                 elif args.group:
                     sql_string += " AND messages.key_remote_jid LIKE ?"
-                    params.append("%" + str(args.group) + "%")
+                    sql_params.append('%' + str(args.group) + '%')
 
                 sql_count = "SELECT COUNT(*) FROM messages LEFT JOIN message_thumbnails ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp" \
-                            " BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                cursor.execute(sql_count, tuple(params))
+                            " BETWEEN ? AND ? AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
+                cursor.execute(sql_count, tuple(sql_params))
                 result = cursor.fetchone()
                 print(result[0], "Images found")
                 sql_string_extract = "SELECT messages.key_id, messages.media_wa_type, messages.thumb_image, messages.raw_data, messages.timestamp, message_thumbnails.thumbnail, messages.key_remote_jid, messages.remote_resource, messages._id FROM messages LEFT JOIN message_thumbnails " \
-                                     "ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + " AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
-                sql_consult_extract = cursor.execute(sql_string_extract, tuple(params))
+                                     "ON messages.key_id = message_thumbnails.key_id WHERE messages.timestamp BETWEEN ? AND ? AND messages.media_wa_type IN (1, 3, 9, 13) " + sql_string + ";"
+                sql_consult_extract = cursor.execute(sql_string_extract, tuple(sql_params))
                 extract(sql_consult_extract, result[0], local)
             except Exception as e:
                 print("Error extracting:", e)

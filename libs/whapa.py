@@ -1711,13 +1711,13 @@ def info(opt, local):
             epoch_end = 1000 * int(time.mktime(time.strptime(args.time_end, '%d-%m-%Y %H:%M')))
 
         sql_string = "SELECT jid.raw_string, call_log.from_me, call_log.timestamp, call_log.video_call, call_log.duration FROM call_log LEFT JOIN jid ON call_log.jid_row_id = jid._id WHERE " \
-                     " call_log.timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + ";"
-        sql_count = "SELECT count(*) FROM call_log WHERE timestamp BETWEEN " + str(epoch_start) + " AND " + str(epoch_end) + ";"
+                     " call_log.timestamp BETWEEN ? AND ?;"
+        sql_count = "SELECT count(*) FROM call_log WHERE timestamp BETWEEN ? AND ?;"
         print("Loading data ...")
-        result = cursor.execute(sql_count)
+        result = cursor.execute(sql_count, (epoch_start, epoch_end))
         result = cursor.fetchone()
         print("Number of messages: {}".format(str(result[0])))
-        consult = cursor.execute(sql_string)
+        consult = cursor.execute(sql_string, (epoch_start, epoch_end))
         for data in consult:
             if report_var == 'None':
                 message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"

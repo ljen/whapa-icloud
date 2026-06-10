@@ -4,7 +4,7 @@ import sys
 import subprocess
 import webbrowser
 from textwrap import dedent
-from tkinter import *
+from tkinter import Tk, Toplevel, Frame, Label, LabelFrame, Button, Checkbutton, Radiobutton, Entry, StringVar, PhotoImage, DISABLED, NORMAL, END, RAISED
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog

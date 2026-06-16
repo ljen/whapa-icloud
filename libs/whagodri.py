@@ -44,7 +44,7 @@ class WaBackup:
     def _get_master_token(self, gmail, password, android_id, oauth_token):
         if oauth_token:
             print("Exchanging web oauth_token to master token...")
-            token = gpsoauth.exchange_token(gmail, oauth_token, android_id)
+            token = gpsoauth.exchange_token(gmail, oauth_token, gpsoauth.DeviceConfig(android_id=android_id))
             if "Token" in token:
                 print("Granted.")
                 return token['Token']
@@ -53,7 +53,7 @@ class WaBackup:
                 quit()
         else:
             print("Requesting access to Google...")
-            token = gpsoauth.perform_master_login(email=gmail, password=password, android_id=android_id)
+            token = gpsoauth.perform_master_login(email=gmail, password=password, device_config=gpsoauth.DeviceConfig(android_id=android_id))
             if token.get("Error") == "NeedsBrowser":
                 oauth_token = self._handle_browser_login(gmail, android_id, token)
             else:
@@ -124,7 +124,7 @@ class WaBackup:
             exit()
 
         print("Requesting access to Google by OAuth cookie...")
-        login_token = gpsoauth.perform_master_login_oauth(email=gmail, oauth_token=oauth_token, android_id=android_id)
+        login_token = gpsoauth.perform_master_login_oauth(email=gmail, oauth_token=oauth_token, device_config=gpsoauth.DeviceConfig(android_id=android_id, sdk_version=28))
         if "Token" not in login_token:
             error(login_token)
             quit()
@@ -142,10 +142,9 @@ class WaBackup:
         auth = gpsoauth.perform_oauth(
             gmail,
             master_token,
-            android_id,
             "oauth2:https://www.googleapis.com/auth/drive.appdata",
             "com.whatsapp",
-            "38a0f7d505fe18fec64fbf343ecaaaf310dbd799",
+            gpsoauth.DeviceConfig(android_id=android_id, client_sig="38a0f7d505fe18fec64fbf343ecaaaf310dbd799"),
         )
         if "Auth" not in auth:
             error(auth)

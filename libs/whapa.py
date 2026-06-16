@@ -63,7 +63,7 @@ def db_connect(db):
                 cursor_rep = conn.cursor()
             print("msgstore.db connected\n")
             return cursor, cursor_rep
-        except Exception as e:
+        except sqlite3.Error as e:
             print("Error connecting to Database, ", e)
     else:
         print("msgstore.db doesn't exist")
@@ -126,7 +126,7 @@ def names(obj):
                         names_dict.update({data[0]: data[1]})
                 except Exception as e:
                     print("Error adding items in the dictionary:", e)
-        except Exception as e:
+        except sqlite3.Error as e:
             print("Error connecting to Database, ", e)
     else:
         print("wa database doesn't exist")
@@ -1676,7 +1676,7 @@ def messages(consult, rows, report_html, local):
             except:
                 pass
 
-    except Exception as e:
+    except sqlite3.Error as e:
         print("\nAn error occurred connecting to the database", e)
 
 

@@ -84,18 +84,18 @@ def merge(db_path, db_name):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(args.path):
+        for db_file in os.listdir(db_path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            exit()
+            sys.exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            exit()
+            sys.exit()
         print("[i] {} database found - make sure they are all msgstore databases".format(len(list_dbs)))
         # Copy first 'db' in db_name and open write connection
         if list_dbs[0] != db_name:
@@ -250,18 +250,18 @@ def merge_win(db_path, db_name):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(args.path):
+        for db_file in os.listdir(db_path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            exit()
+            sys.exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            exit()
+            sys.exit()
         print("[i] {} database found - make sure they are all msgstore databases".format(len(list_dbs)))
         # Copy first 'db' in db_name and open write connection
 

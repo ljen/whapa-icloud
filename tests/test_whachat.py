@@ -1,4 +1,3 @@
-import pytest
 import unittest
 from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS, startsWithAuthor
 

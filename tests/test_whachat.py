@@ -1,6 +1,20 @@
 import pytest
 import unittest
-from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS
+from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS, startsWithAuthor
+
+def test_startsWithAuthor_valid():
+    assert startsWithAuthor("John:")
+    assert startsWithAuthor("John Doe:")
+    assert startsWithAuthor("John Middle Doe:")
+    assert startsWithAuthor("John Middle Doe Smith:")
+    assert startsWithAuthor("John Middle Doe Smith Puff:")
+    assert startsWithAuthor("+1 123 456 7890:")
+
+def test_startsWithAuthor_invalid():
+    assert not startsWithAuthor("No colon")
+    assert not startsWithAuthor("")
+    assert not startsWithAuthor("John")
+    assert not startsWithAuthor(": only colon")
 
 def test_startsWithDateTimeAndroid_valid():
     assert startsWithDateTimeAndroid("24/5/18 14:25 - Sergio F: No se tío")

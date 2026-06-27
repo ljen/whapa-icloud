@@ -165,7 +165,7 @@ class Whapa:
    3. Press More.
    4. Select Export chat.
    5. Choose Include or Exclude files.
-
+   
 To export chats on an iOS phone, here are the steps:
    1. Open the individual or group chat.
    2. Press on the name (Chat information).
@@ -1053,16 +1053,15 @@ To export chats on an iOS phone, here are the steps:
         msgstore_file = (self.whapa_file.get()).strip("\n")
         if system == "Linux":
             print("[i] Make sure the undark file has execute permissions")
+            executable = self.system_slash(r'{}/libs/undark'.format(whapa_path))
             exec_command = self.system_slash(r'"{}/libs/undark" -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
-            os.system(exec_command)
-
         else:
-            log = open(log_file, 'w')
-            exec = self.system_slash(r'{}/libs/undark.exe'.format(whapa_path))
-            c = subprocess.Popen([exec, "-i", msgstore_file, "--no-blobs", "--freespace"], stdout=log, shell=True)
-            c.wait()
-            log.close()
+            executable = self.system_slash(r'{}/libs/undark.exe'.format(whapa_path))
             exec_command = self.system_slash(r'{}/libs/undark.exe -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
+
+        with open(log_file, 'w') as log:
+            c = subprocess.Popen([executable, "-i", msgstore_file, "--no-blobs", "--freespace"], stdout=log)
+            c.wait()
 
         self.label_status.set(exec_command)
         print("[i] Finished")
@@ -1233,22 +1232,13 @@ To export chats on an iOS phone, here are the steps:
     def whamerge(self):
         """Run merge command"""
 
-        script_path = self.system_slash(r'{}/libs/whamerge.py'.format(whapa_path))
-
         if system == "Linux":
-            python_cmd = "python3"
+            exec = self.system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
         else:
-            python_cmd = "python"
+            exec = self.system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
 
-        cmd = [python_cmd, script_path, self.whamerge_path.get(), "-o", self.whamerge_file.get()]
-
-        if system == "Linux":
-            exec_str = self.system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
-        else:
-            exec_str = self.system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
-
-        self.label_status.set(exec_str)
-        subprocess.run(cmd)
+        self.label_status.set(exec)
+        os.system(exec)
 
     def search_file_whachat(self):
         """Search a file and load participants"""
@@ -1486,7 +1476,7 @@ if __name__ == '__main__':
                 # You can specify a list of celnumbr = BackupNumber1, BackupNumber2, ...
                 celnumbr = ""
 
-                [icloud-auth]
+                [icloud-auth] 
                 icloud  = alias@icloud.com
                 passw = yourpassword
                 """).lstrip())

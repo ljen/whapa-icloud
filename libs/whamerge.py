@@ -163,6 +163,11 @@ def merge(db_path, db_name):
                 print("   [-] " + filename + " --> " + str(len(ids_message_read)) + " messages, " + str(len(ids_chatlist_read)) + " chats, " + str(len(ids_quote_read)) + " replies, " + str(len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
+                ids_message_write_set = set(ids_message_write)
+                ids_chatlist_write_set = set(ids_chatlist_write)
+                ids_quote_write_set = set(ids_quote_write)
+                ids_thumb_write_set = set(ids_thumb_write)
+
                 print("[+] Looking for new messages")
                 ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []
@@ -337,6 +342,11 @@ def merge_win(db_path, db_name):
                     len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
+                ids_message_write_set = set(ids_message_write)
+                ids_chatlist_write_set = set(ids_chatlist_write)
+                ids_quote_write_set = set(ids_quote_write)
+                ids_thumb_write_set = set(ids_thumb_write)
+
                 print("[+] Looking for new messages")
                 ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []

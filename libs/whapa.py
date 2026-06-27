@@ -63,7 +63,7 @@ def db_connect(db):
                 cursor_rep = conn.cursor()
             print("msgstore.db connected\n")
             return cursor, cursor_rep
-        except sqlite3.Error as e:
+        except Exception as e:
             print("Error connecting to Database, ", e)
     else:
         print("msgstore.db doesn't exist")
@@ -126,7 +126,7 @@ def names(obj):
                         names_dict.update({data[0]: data[1]})
                 except Exception as e:
                     print("Error adding items in the dictionary:", e)
-        except sqlite3.Error as e:
+        except Exception as e:
             print("Error connecting to Database, ", e)
     else:
         print("wa database doesn't exist")
@@ -1676,7 +1676,7 @@ def messages(consult, rows, report_html, local):
             except:
                 pass
 
-    except sqlite3.Error as e:
+    except Exception as e:
         print("\nAn error occurred connecting to the database", e)
 
 
@@ -2064,66 +2064,61 @@ if __name__ == "__main__":
                         sql_string_copy = sql_string
                         sql_count_copy = sql_count
 
-                        i_split = i.split('@', 1)
-                        if len(i_split) < 2:
-                            continue
-                        i_0, i_1 = i_split
-
-                        if i_1 == "g.us":
+                        if i.split('@')[1] == "g.us":
                             if report_var == 'EN':
                                 report_html = "report_group_chat_" + i + ".html"
-                                report_med += "<tr><th>Group</th><th><a href=\"report_group_chat_" + i + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_med += "<tr><th>Group</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                             elif report_var == 'ES':
                                 report_html = "report_group_chat_" + i + ".html"
-                                report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                                report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = i
                             arg_user = ""
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "GROUP CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_group)
 
-                        elif i_1 == "s.whatsapp.net":
+                        elif i.split('@')[1] == "s.whatsapp.net":
                             if report_var == 'EN':
-                                report_med += "<tr><th>User</th><th><a href=\"report_user_chat_" + i_0 + ".html\" target=\"_blank\"> " + i_0 + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_user_chat_" + i_0 + ".html"
+                                report_med += "<tr><th>User</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_user_chat_" + i.split('@')[0] + ".html"
                             elif report_var == 'ES':
-                                report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i_0 + ".html\" target=\"_blank\"> " + i_0 + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_user_chat_" + i_0 + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                                report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_user_chat_" + i.split('@')[0] + ".html"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
-                            arg_user = i_0
-                            result = cursor.execute(sql_count_copy)
+                            arg_user = i.split('@')[0]
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "USER CHAT " + arg_user + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group = ""
 
-                        elif i_1 == "broadcast":
+                        elif i.split('@')[1] == "broadcast":
                             if report_var == 'EN':
-                                report_med += "<tr><th>Broadcast</th><th><a href=\"report_broadcast_chat_" + i_0 + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_broadcast_chat_" + i_0 + ".html"
+                                report_med += "<tr><th>Broadcast</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
                             elif report_var == 'ES':
-                                report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i_0 + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_broadcast_chat_" + i_0 + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                                report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "BROADCAST CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_user)
 
-                        sql_consult = cursor.execute(sql_string_copy)
+                        sql_consult = cursor.execute(sql_string_copy, ("%" + i + "%",))
                         messages(sql_consult, result[0], report_html, local)
                         print()
 

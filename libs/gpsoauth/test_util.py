@@ -1,6 +1,7 @@
 import pytest
 from libs.gpsoauth.util import bytes_to_int, int_to_bytes
 
+
 @pytest.mark.parametrize(
     "byte_seq, expected",
     [
@@ -19,15 +20,18 @@ def test_bytes_to_int(byte_seq, expected):
     """Test converting bytes to integer."""
     assert bytes_to_int(byte_seq) == expected
 
+
 def test_int_to_bytes_zero():
     assert int_to_bytes(0) == b"\0"
     assert int_to_bytes(0, pad_multiple=0) == b""
     assert int_to_bytes(0, pad_multiple=1) == b"\0"
     assert int_to_bytes(0, pad_multiple=4) == b"\0\0\0\0"
 
+
 def test_int_to_bytes_negative():
     with pytest.raises(ValueError, match="Can only convert non-negative numbers."):
         int_to_bytes(-1)
+
 
 def test_int_to_bytes_positive():
     # 255 is 0xFF

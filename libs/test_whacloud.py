@@ -4,6 +4,7 @@ import os
 import binascii
 from libs.whacloud import is_media_tar, hkdf_legacy
 
+
 class TestHkdfLegacy(unittest.TestCase):
     def test_hkdf_legacy_basic(self):
         """Test basic hkdf_legacy functionality with known vectors."""
@@ -11,7 +12,9 @@ class TestHkdfLegacy(unittest.TestCase):
         salt = b"salt"
         info = b"info"
         length = 32
-        expected = binascii.unhexlify(b"afae921b3bebb39989e1edba7b98344b227ff0a6d42739b6628098bc8377037b")
+        expected = binascii.unhexlify(
+            b"afae921b3bebb39989e1edba7b98344b227ff0a6d42739b6628098bc8377037b"
+        )
         result = hkdf_legacy(ikm, salt, info, length)
         self.assertEqual(result, expected)
         self.assertEqual(len(result), length)
@@ -21,7 +24,9 @@ class TestHkdfLegacy(unittest.TestCase):
         ikm = b"password"
         info = b"info"
         length = 32
-        expected = binascii.unhexlify(b"6383ecb00b8f97c8046a02f7caa46ebd180aae52de5b0b85f742195854767bf1")
+        expected = binascii.unhexlify(
+            b"6383ecb00b8f97c8046a02f7caa46ebd180aae52de5b0b85f742195854767bf1"
+        )
         result = hkdf_legacy(ikm, None, info, length)
         self.assertEqual(result, expected)
         self.assertEqual(len(result), length)
@@ -39,6 +44,7 @@ class TestHkdfLegacy(unittest.TestCase):
         for length in [16, 32, 48, 64]:
             result = hkdf_legacy(ikm, salt, info, length)
             self.assertEqual(len(result), length)
+
 
 class TestIsMediaTar(unittest.TestCase):
     def test_is_media_tar_valid(self):
@@ -81,5 +87,6 @@ class TestIsMediaTar(unittest.TestCase):
         """Test with a file path that causes an exception (e.g. doesn't exist)."""
         self.assertFalse(is_media_tar("non_existent_file.tar"))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

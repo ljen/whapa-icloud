@@ -2,10 +2,11 @@ import unittest
 import sys
 import os
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from colorama import Fore
 from libs.whapa import duration_file, size_file, status
+
 
 class TestDurationFile(unittest.TestCase):
     def test_seconds(self):
@@ -27,6 +28,7 @@ class TestDurationFile(unittest.TestCase):
         self.assertEqual(duration_file(7200), "2h 0m 0s")
         self.assertEqual(duration_file(7322), "2h 2m 2s")
 
+
 class TestWhapa(unittest.TestCase):
     def test_size_file(self):
         # Edge cases and values in KB
@@ -38,6 +40,7 @@ class TestWhapa(unittest.TestCase):
         self.assertEqual(size_file(1048577), "(1.00 MB)")
         self.assertEqual(size_file(2097152), "(2.00 MB)")
 
+
 class TestStatus(unittest.TestCase):
     def test_status_received(self):
         # 0 and 5 return ("Received", "&#10004;&#10004;")
@@ -46,21 +49,31 @@ class TestStatus(unittest.TestCase):
 
     def test_status_waiting_in_server(self):
         # 4 returns (Fore.RED + "Waiting in server" + Fore.RESET, "&#10004;")
-        self.assertEqual(status(4), (Fore.RED + "Waiting in server" + Fore.RESET, "&#10004;"))
+        self.assertEqual(
+            status(4), (Fore.RED + "Waiting in server" + Fore.RESET, "&#10004;")
+        )
 
     def test_status_system_message(self):
         # 6 returns (Fore.YELLOW + "System message" + Fore.RESET, "&#128187;")
-        self.assertEqual(status(6), (Fore.YELLOW + "System message" + Fore.RESET, "&#128187;"))
+        self.assertEqual(
+            status(6), (Fore.YELLOW + "System message" + Fore.RESET, "&#128187;")
+        )
 
     def test_status_audio_played(self):
         # 8 and 10 return (Fore.BLUE + "Audio played" + Fore.RESET, "<font color=\"#0000ff \">&#10004;&#10004;</font>")
-        expected = (Fore.BLUE + "Audio played" + Fore.RESET, '<font color="#0000ff ">&#10004;&#10004;</font>')
+        expected = (
+            Fore.BLUE + "Audio played" + Fore.RESET,
+            '<font color="#0000ff ">&#10004;&#10004;</font>',
+        )
         self.assertEqual(status(8), expected)
         self.assertEqual(status(10), expected)
 
     def test_status_seen(self):
         # 12 and 13 return (Fore.BLUE + "Seen" + Fore.RESET, "<font color=\"#0000ff \">&#10004;&#10004;</font>")
-        expected = (Fore.BLUE + "Seen" + Fore.RESET, '<font color="#0000ff ">&#10004;&#10004;</font>')
+        expected = (
+            Fore.BLUE + "Seen" + Fore.RESET,
+            '<font color="#0000ff ">&#10004;&#10004;</font>',
+        )
         self.assertEqual(status(12), expected)
         self.assertEqual(status(13), expected)
 
@@ -69,6 +82,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(status(1), ("1", ""))
         self.assertEqual(status(99), ("99", ""))
         self.assertEqual(status(-1), ("-1", ""))
+
 
 if __name__ == "__main__":
     unittest.main()

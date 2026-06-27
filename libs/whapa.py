@@ -2071,11 +2071,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_html = "report_group_chat_" + i + ".html"
                                 report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = i
                             arg_user = ""
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2089,11 +2089,11 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_user_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i.split('@')[0]
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
@@ -2107,18 +2107,18 @@ if __name__ == "__main__":
                             elif report_var == 'ES':
                                 report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                                 report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
-                            sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
+                            sql_string_copy += " AND messages.key_remote_jid LIKE ?"
+                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i
-                            result = cursor.execute(sql_count_copy)
+                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
                             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
                             print(Fore.CYAN + "BROADCAST CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_user)
 
-                        sql_consult = cursor.execute(sql_string_copy)
+                        sql_consult = cursor.execute(sql_string_copy, ("%" + i + "%",))
                         messages(sql_consult, result[0], report_html, local)
                         print()
 

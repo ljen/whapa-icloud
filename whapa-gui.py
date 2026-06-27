@@ -1263,32 +1263,6 @@ To export chats on an iOS phone, here are the steps:
             self.label_status.set("Did not get the list of participants choose another operating system and load the file back")
             print("Could not load the list of participants, choose another operating system and load the file back")
 
-    def on_entry_click(self, event):
-        """function that gets called whenever entry is clicked"""
-        if self.entry_whachat_ts.get() == "dd-mm-yyyy HH:MM":
-            self.entry_whachat_ts.delete(0, "end")  # delete all the text in the entry
-            self.entry_whachat_ts.insert(0, '')  # Insert blank for user input
-            self.entry_whachat_ts.config(fg='black')
-
-    def on_entry_click_out(self, event):
-        """function that gets called whenever entry is clicked"""
-        if self.entry_whachat_te.get() == "dd-mm-yyyy HH:MM":
-            self.entry_whachat_te.delete(0, "end")  # delete all the text in the entry
-            self.entry_whachat_te.insert(0, '')  # Insert blank for user input
-            self.entry_whachat_te.config(fg='black')
-
-    def on_focusout(self, event):
-        """Function that's called every time the focus is lost"""
-        if self.entry_whachat_ts.get() == '':
-            self.entry_whachat_ts.insert(0, "dd-mm-yyyy HH:MM")
-            self.entry_whachat_ts.config(fg='grey')
-
-    def on_focusout_out(self, event):
-        """Function that's called every time the focus is lost"""
-        if self.entry_whachat_te.get() == '':
-            self.entry_whachat_te.insert(0, "dd-mm-yyyy HH:MM")
-            self.entry_whachat_te.config(fg='grey')
-
     def estate_assets_whachat(self):
         """Check that radiobutton is marked"""
 

@@ -2064,13 +2064,18 @@ if __name__ == "__main__":
                         sql_string_copy = sql_string
                         sql_count_copy = sql_count
 
-                        if i.split('@')[1] == "g.us":
+                        i_split = i.split('@', 1)
+                        if len(i_split) < 2:
+                            continue
+                        i_0, i_1 = i_split
+
+                        if i_1 == "g.us":
                             if report_var == 'EN':
                                 report_html = "report_group_chat_" + i + ".html"
-                                report_med += "<tr><th>Group</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_med += "<tr><th>Group</th><th><a href=\"report_group_chat_" + i + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                             elif report_var == 'ES':
                                 report_html = "report_group_chat_" + i + ".html"
-                                report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_med += "<tr><th>Grupo</th><th><a href=\"report_group_chat_" + i + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
                             sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = i
@@ -2082,17 +2087,17 @@ if __name__ == "__main__":
                             print(Fore.CYAN + "GROUP CHAT " + i + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group, color = participants(arg_group)
 
-                        elif i.split('@')[1] == "s.whatsapp.net":
+                        elif i_1 == "s.whatsapp.net":
                             if report_var == 'EN':
-                                report_med += "<tr><th>User</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_user_chat_" + i.split('@')[0] + ".html"
+                                report_med += "<tr><th>User</th><th><a href=\"report_user_chat_" + i_0 + ".html\" target=\"_blank\"> " + i_0 + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_user_chat_" + i_0 + ".html"
                             elif report_var == 'ES':
-                                report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i.split('@')[0] + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_user_chat_" + i.split('@')[0] + ".html"
+                                report_med += "<tr><th>Usuario</th><th><a href=\"report_user_chat_" + i_0 + ".html\" target=\"_blank\"> " + i_0 + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_user_chat_" + i_0 + ".html"
                             sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = ""
-                            arg_user = i.split('@')[0]
+                            arg_user = i_0
                             result = cursor.execute(sql_count_copy)
                             result = cursor.fetchone()
                             print("\nNumber of messages: {}".format(str(result[0])))
@@ -2100,13 +2105,13 @@ if __name__ == "__main__":
                             print(Fore.CYAN + "USER CHAT " + arg_user + Fore.RESET + Fore.YELLOW + gets_name(i) + Fore.RESET)
                             report_group = ""
 
-                        elif i.split('@')[1] == "broadcast":
+                        elif i_1 == "broadcast":
                             if report_var == 'EN':
-                                report_med += "<tr><th>Broadcast</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
+                                report_med += "<tr><th>Broadcast</th><th><a href=\"report_broadcast_chat_" + i_0 + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_broadcast_chat_" + i_0 + ".html"
                             elif report_var == 'ES':
-                                report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i.split('@')[0] + ".html" + "\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
-                                report_html = "report_broadcast_chat_" + i.split('@')[0] + ".html"
+                                report_med += "<tr><th>Difusión</th><th><a href=\"report_broadcast_chat_" + i_0 + ".html\" target=\"_blank\"> " + i + gets_name(i) + "</a></th></tr>"
+                                report_html = "report_broadcast_chat_" + i_0 + ".html"
                             sql_string_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             sql_count_copy += " AND messages.key_remote_jid LIKE '%" + i + "%'"
                             arg_group = ""

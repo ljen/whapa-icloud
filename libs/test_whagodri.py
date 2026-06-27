@@ -1,4 +1,3 @@
-import pytest
 from whagodri import human_size
 
 def test_human_size_bytes():

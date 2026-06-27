@@ -1053,16 +1053,15 @@ To export chats on an iOS phone, here are the steps:
         msgstore_file = (self.whapa_file.get()).strip("\n")
         if system == "Linux":
             print("[i] Make sure the undark file has execute permissions")
+            executable = self.system_slash(r'{}/libs/undark'.format(whapa_path))
             exec_command = self.system_slash(r'"{}/libs/undark" -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
-            os.system(exec_command)
-
         else:
-            log = open(log_file, 'w')
-            exec = self.system_slash(r'{}/libs/undark.exe'.format(whapa_path))
-            c = subprocess.Popen([exec, "-i", msgstore_file, "--no-blobs", "--freespace"], stdout=log, shell=True)
-            c.wait()
-            log.close()
+            executable = self.system_slash(r'{}/libs/undark.exe'.format(whapa_path))
             exec_command = self.system_slash(r'{}/libs/undark.exe -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
+
+        with open(log_file, 'w') as log:
+            c = subprocess.Popen([executable, "-i", msgstore_file, "--no-blobs", "--freespace"], stdout=log)
+            c.wait()
 
         self.label_status.set(exec_command)
         print("[i] Finished")

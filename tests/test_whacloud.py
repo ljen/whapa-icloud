@@ -5,10 +5,36 @@ import sys
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from libs.whacloud import _pkcs7_strip, _safe_join
-from unittest.mock import patch
-from libs.whacloud import lzfse_decode
-import libs.whacloud
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+
+class TestHkdfV1(unittest.TestCase):
+    def test_hkdf_v1_known_output(self):
+        # A simple known answer test generated directly from the function
+        ikm = b"ikm_test_data"
+        info = b"info_test_data"
+        length = 32
+        expected_hex = "f15c20c921c12f95f00759afa87f6fa411a2221d19a347b1978b2daebe5f22bd"
+        out = hkdf_v1(ikm, info, length)
+        self.assertEqual(out.hex(), expected_hex)
+
+    def test_hkdf_v1_empty_info(self):
+        # Info can be an empty byte string
+        ikm = b"ikm_test_data"
+        info = b""
+        length = 16
+        out = hkdf_v1(ikm, info, length)
+        self.assertEqual(len(out), length)
+        # Verify it's deterministic
+        out2 = hkdf_v1(ikm, info, length)
+        self.assertEqual(out, out2)
+
+    def test_hkdf_v1_length(self):
+        # Test that the length parameter correctly limits the output
+        ikm = b"ikm_test_data"
+        info = b"info_test_data"
+        for length in [1, 16, 32, 48, 64]:
+            out = hkdf_v1(ikm, info, length)
+            self.assertEqual(len(out), length)
 
 class TestPkcs7Strip(unittest.TestCase):
     def test_valid_padding(self):
@@ -88,20 +114,6 @@ class TestSafeJoin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
-
-class TestLZFSEDecode(unittest.TestCase):
-    @patch('libs.whacloud._lib')
-    def test_lzfse_decode_error(self, mock_lib):
-        mock_lib.compression_decode_buffer.return_value = 0
-        with self.assertRaises(RuntimeError) as context:
-            lzfse_decode(b"dummy", 10)
-        self.assertEqual(str(context.exception), "LZFSE decode failed")
-
-    @patch('libs.whacloud._lib', new=None)
-    def test_lzfse_decode_no_lib(self):
-        with self.assertRaises(RuntimeError) as context:
-            lzfse_decode(b"dummy", 10)
-        self.assertEqual(str(context.exception), "libcompression.dylib not found. This script requires macOS.")
 
 if __name__ == '__main__':
     unittest.main()

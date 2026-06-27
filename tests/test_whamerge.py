@@ -1,70 +1,119 @@
-import pytest
-import sqlite3
+import unittest
 import os
 import sys
+import sqlite3
+import tempfile
+import shutil
+from unittest.mock import patch
 
-# Pre-requisites path adjustment as requested in memories
+# Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import libs.whamerge as whamerge
+from libs.whamerge import merge, merge_win, messages_columns, chatlist_columns, quote_columns, thumbnail_columns
 
-def create_db(name, messages):
-    conn = sqlite3.connect(name)
-    c = conn.cursor()
-    c.execute('CREATE TABLE messages (_id INTEGER PRIMARY KEY, key_remote_jid TEXT, key_from_me INTEGER, key_id TEXT, status INTEGER, needs_push INTEGER, data TEXT, timestamp INTEGER, media_url TEXT, media_mime_type TEXT, media_wa_type INTEGER, media_size INTEGER, media_name TEXT, media_caption TEXT, media_hash TEXT, media_duration INTEGER, origin INTEGER, latitude REAL, longitude REAL, thumb_image TEXT, remote_resource TEXT, received_timestamp INTEGER, send_timestamp INTEGER, receipt_server_timestamp INTEGER, receipt_device_timestamp INTEGER, read_device_timestamp INTEGER, played_device_timestamp INTEGER, raw_data BLOB, recipient_count INTEGER, participant_hash TEXT, starred INTEGER, quoted_row_id INTEGER, mentioned_jids TEXT, multicast_id TEXT, edit_version INTEGER, media_enc_hash TEXT, payment_transaction_id TEXT, forwarded INTEGER, preview_type INTEGER, send_count INTEGER, lookup_tables INTEGER, future_message_type INTEGER, message_add_on_flags INTEGER)')
-    c.execute('CREATE TABLE chat (_id INTEGER PRIMARY KEY, jid_row_id INTEGER, hidden INTEGER, subject TEXT, created_timestamp INTEGER, display_message_row_id INTEGER, last_message_row_id INTEGER, last_read_message_row_id INTEGER, last_read_receipt_sent_message_row_id INTEGER, last_important_message_row_id INTEGER, archived INTEGER, sort_timestamp INTEGER, mod_tag INTEGER, gen INTEGER, spam_detection INTEGER, unseen_earliest_message_received_time INTEGER, unseen_message_count INTEGER, unseen_missed_calls_count INTEGER, unseen_row_count INTEGER, plaintext_disabled INTEGER, vcard_ui_dismissed INTEGER, change_number_notified_message_row_id INTEGER, show_group_description INTEGER, ephemeral_expiration INTEGER, last_read_ephemeral_message_row_id INTEGER, ephemeral_setting_timestamp INTEGER, unseen_important_message_count INTEGER, ephemeral_disappearing_messages_initiator INTEGER, group_type INTEGER, last_message_reaction_row_id INTEGER, last_seen_message_reaction_row_id INTEGER, unseen_message_reaction_count INTEGER, growth_lock_level INTEGER, growth_lock_expiration_ts INTEGER, last_read_message_sort_id INTEGER, display_message_sort_id INTEGER, last_message_sort_id INTEGER, last_read_receipt_sent_message_sort_id INTEGER)')
-    c.execute('CREATE TABLE messages_quotes (_id INTEGER PRIMARY KEY, key_remote_jid TEXT, key_from_me INTEGER, key_id TEXT, status INTEGER, needs_push INTEGER, data TEXT, timestamp INTEGER, media_url TEXT, media_mime_type TEXT, media_wa_type INTEGER, media_size INTEGER, media_name TEXT, media_caption TEXT, media_hash TEXT, media_duration INTEGER, origin INTEGER, latitude REAL, longitude REAL, thumb_image TEXT, remote_resource TEXT, received_timestamp INTEGER, send_timestamp INTEGER, receipt_server_timestamp INTEGER, receipt_device_timestamp INTEGER, read_device_timestamp INTEGER, played_device_timestamp INTEGER, raw_data BLOB, recipient_count INTEGER, participant_hash TEXT, starred INTEGER, quoted_row_id INTEGER, mentioned_jids TEXT, multicast_id TEXT, edit_version INTEGER, media_enc_hash TEXT, payment_transaction_id TEXT, forwarded INTEGER, preview_type INTEGER, send_count INTEGER, lookup_tables INTEGER, future_message_type INTEGER, message_add_on_flags INTEGER)')
-    c.execute('CREATE TABLE message_thumbnails (rowid INTEGER PRIMARY KEY, thumbnail BLOB, timestamp INTEGER, key_remote_jid TEXT, key_from_me INTEGER, key_id TEXT)')
+class TestWhamerge(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.db1_path = os.path.join(self.test_dir, "db1.db")
+        self.db2_path = os.path.join(self.test_dir, "db2.db")
+        self.output_db = os.path.join(self.test_dir, "output.db")
 
-    # We will just pad columns with None to match the schema
-    m_pad = [None] * (len(whamerge.messages_columns) - 2)
-    c_pad = [None] * (len(whamerge.chatlist_columns) - 2)
-    q_pad = [None] * (len(whamerge.quote_columns) - 2)
+        self.create_test_db(self.db1_path, [1, 2], [10, 20], [100, 200], [1000, 2000])
+        self.create_test_db(self.db2_path, [2, 3], [20, 30], [200, 300], [2000, 3000])
 
-    # Message thumbnails has 5 columns + rowid
-    t_pad = [None] * 4
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
 
-    for i in messages:
-        c.execute('INSERT INTO messages VALUES (?, ?' + ', ?'*len(m_pad) + ')', (i, f'msg{i}', *m_pad))
-        c.execute('INSERT INTO chat VALUES (?, ?' + ', ?'*len(c_pad) + ')', (i, f'chat{i}', *c_pad))
-        c.execute('INSERT INTO messages_quotes VALUES (?, ?' + ', ?'*len(q_pad) + ')', (i, f'quote{i}', *q_pad))
-        c.execute('INSERT INTO message_thumbnails VALUES (?, ?' + ', ?'*len(t_pad) + ')', (i, b'thumb', *t_pad))
+    def create_test_db(self, path, msg_ids, chat_ids, quote_ids, thumb_ids):
+        with sqlite3.connect(path) as conn:
+            cursor = conn.cursor()
+            # Create tables
+            cursor.execute(f"CREATE TABLE messages ({','.join(messages_columns)});")
+            cursor.execute(f"CREATE TABLE chat ({','.join(chatlist_columns)});")
+            cursor.execute(f"CREATE TABLE messages_quotes ({','.join(quote_columns)});")
+            cursor.execute(f"CREATE TABLE message_thumbnails ({','.join(thumbnail_columns)}, rowid INTEGER PRIMARY KEY);")
 
-    conn.commit()
-    conn.close()
+            # Insert dummy data
+            for msg_id in msg_ids:
+                vals = [msg_id] + [str(msg_id)] * (len(messages_columns) - 1)
+                cursor.execute(f"INSERT INTO messages VALUES ({','.join(['?'] * len(messages_columns))})", vals)
 
+            for chat_id in chat_ids:
+                vals = [chat_id] + [str(chat_id)] * (len(chatlist_columns) - 1)
+                cursor.execute(f"INSERT INTO chat VALUES ({','.join(['?'] * len(chatlist_columns))})", vals)
 
-def test_merge(tmp_path, monkeypatch):
-    """Test functionality of merge."""
+            for quote_id in quote_ids:
+                vals = [quote_id] + [str(quote_id)] * (len(quote_columns) - 1)
+                cursor.execute(f"INSERT INTO messages_quotes VALUES ({','.join(['?'] * len(quote_columns))})", vals)
 
-    db_dir = tmp_path / "dbs"
-    db_dir.mkdir()
+            for thumb_id in thumb_ids:
+                # Store thumb_id in the first column ('thumbnail') as string to track it
+                vals = [str(thumb_id)] + [''] * (len(thumbnail_columns) - 1) + [thumb_id]
+                cursor.execute(f"INSERT INTO message_thumbnails VALUES ({','.join(['?'] * (len(thumbnail_columns) + 1))})", vals)
 
-    db1_path = str(db_dir / "db1.db")
-    db2_path = str(db_dir / "db2.db")
+            conn.commit()
 
-    # DB1 has 1, 2, 3
-    create_db(db1_path, [1, 2, 3])
-    # DB2 has 2, 3, 4
-    create_db(db2_path, [2, 3, 4])
+    @patch('builtins.print')
+    def test_merge_success(self, mock_print):
+        # merge appends an output file if > 2 databases exist in path
+        db_path = self.test_dir + os.sep
 
-    out_db = str(tmp_path / "msgstore_merge.db")
+        merge(db_path, self.output_db)
 
-    class Args:
-        path = str(db_dir) + '/'
+        # Verify the output db contains merged data (unique IDs: 1, 2, 3)
+        with sqlite3.connect(self.output_db) as conn:
+            cursor = conn.cursor()
 
-    whamerge.args = Args()
+            cursor.execute("SELECT _id FROM messages")
+            msg_ids = sorted([row[0] for row in cursor.fetchall()])
+            self.assertEqual(msg_ids, [1, 2, 3])
 
-    try:
-        whamerge.merge(str(db_dir) + '/', out_db)
-    except SystemExit:
-        pass
+            cursor.execute("SELECT _id FROM chat")
+            chat_ids = sorted([row[0] for row in cursor.fetchall()])
+            self.assertEqual(chat_ids, [10, 20, 30])
 
-    # Check if out_db has 1, 2, 3, 4
-    conn = sqlite3.connect(out_db)
-    c = conn.cursor()
-    c.execute("SELECT _id FROM messages ORDER BY _id")
-    ids = c.fetchall()
-    conn.close()
+            cursor.execute("SELECT _id FROM messages_quotes")
+            quote_ids = sorted([row[0] for row in cursor.fetchall()])
+            self.assertEqual(quote_ids, [100, 200, 300])
 
-    assert [i[0] for i in ids] == [1, 2, 3, 4]
+            cursor.execute("SELECT thumbnail FROM message_thumbnails")
+            thumb_ids = sorted([int(row[0]) for row in cursor.fetchall()])
+            self.assertEqual(thumb_ids, [1000, 2000, 3000])
+
+    @patch('builtins.print')
+    def test_merge_win_success(self, mock_print):
+        db_path = self.test_dir + os.sep
+
+        merge_win(db_path, self.output_db)
+
+        # Verify the output db contains merged data (unique IDs: 1, 2, 3)
+        with sqlite3.connect(self.output_db) as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT _id FROM messages")
+            msg_ids = sorted([row[0] for row in cursor.fetchall()])
+            self.assertEqual(msg_ids, [1, 2, 3])
+
+    @patch('builtins.print')
+    def test_merge_no_dbs(self, mock_print):
+        # Create an empty directory
+        empty_dir = tempfile.mkdtemp()
+        try:
+            with self.assertRaises(SystemExit):
+                merge(empty_dir + os.sep, os.path.join(empty_dir, "output.db"))
+        finally:
+            shutil.rmtree(empty_dir)
+
+    @patch('builtins.print')
+    def test_merge_one_db(self, mock_print):
+        # Directory with only one db
+        one_db_dir = tempfile.mkdtemp()
+        try:
+            self.create_test_db(os.path.join(one_db_dir, "single.db"), [1], [1], [1], [1])
+            with self.assertRaises(SystemExit):
+                merge(one_db_dir + os.sep, os.path.join(one_db_dir, "output.db"))
+        finally:
+            shutil.rmtree(one_db_dir)
+
+if __name__ == '__main__':
+    unittest.main()

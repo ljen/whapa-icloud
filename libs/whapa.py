@@ -534,13 +534,18 @@ background-color: #dddddd;
 
 import functools
 
+preloaded_quotes = {}
+
 @functools.lru_cache(maxsize=2048)
 def reply(id, local):
     """ Function look out answer messages """
-    sql_reply_str = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
-                "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded FROM messages_quotes WHERE _id = ?"
-    sql_answer = cursor_rep.execute(sql_reply_str, (id,))
-    rep = sql_answer.fetchone()
+    if id in preloaded_quotes:
+            rep = preloaded_quotes[id]
+    else:
+            sql_reply_str = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
+                        "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded FROM messages_quotes WHERE _id = ?"
+            sql_answer = cursor_rep.execute(sql_reply_str, (id,))
+            rep = sql_answer.fetchone()
     ans = ""
     reply_msj = ""
     if rep is not None:  # Message not deleted
@@ -895,64 +900,125 @@ def messages(consult, rows, report_html, local):
             print(Fore.RED + "Participants" + Fore.RESET)
             print(report_group)
 
-        for data in consult:
-            try:
-                report_msj = ""   # Saves each message
-                report_name = ""  # Saves the chat sender
-                message = ""      # Saves each msg
-                sys.stdout.write("\rMessage {}/{} - ID {}".format(str(n_mes+1), str(rows), str(data[23])))
-                sys.stdout.flush()
+        while True:
+            chunk = consult.fetchmany(1000)
+            if not chunk:
+                break
 
-                if int(data[8]) != -1:   # media_wa_type -1 "Start DB"
-                    # Groups
-                    if (str(data[0]).split('@'))[1] == "g.us":
-                        if int(data[1]) == 1:
-                            if int(data[3]) == 6:  # Group System Message
-                                if report_var == 'EN':
-                                    report_name = "System Message"
-                                elif report_var == 'ES':
-                                    report_name = "Mensaje de Sistema"
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
-                            else:  # I send message to a group
-                                if report_var == 'EN':
-                                    report_name = "Me"
-                                elif report_var == 'ES':
-                                    report_name = "Yo"
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + "Me" + Fore.GREEN + " to " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
-                        elif int(data[1]) == 0:  # Somebody post a message in a group
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                current_color = color.get((str(data[15]).split('@'))[0])
-                                if not current_color:
-                                    current_color = "#5586e5"
-                                report_name = "<font color='{}'> {} </font>".format(current_color, (str(data[15]).split('@'))[0] + gets_name(data[15]))
-                            else:
-                                message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                message += Fore.GREEN + "From " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + ", participant " + Fore.RESET + (str(data[15]).split('@'))[0] + " " + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + "\n"
-                    # Users
-                    elif (str(data[0]).split('@'))[1] == "s.whatsapp.net":
-                        if data[15] and (str(data[15]).split('@'))[1] == "broadcast":
-                            if int(data[1]) == 1:  # I send to somebody message by broadcast
-                                if report_var == 'EN':
-                                    report_name = "&#128227; Me"
-                                elif report_var == 'ES':
-                                    report_name = "&#128227; Yo"
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET +  Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
-                            elif int(data[1]) == 0:  # Someone sends me a message by broadcast
+            preloaded_quotes.clear()
+            quoted_ids = {data[21] for data in chunk if data[21] and int(data[21]) > 0}
+            if quoted_ids:
+                placeholders = ','.join('?' * len(quoted_ids))
+                sql_reply_batch = "SELECT key_remote_jid, key_from_me, key_id, status, data, timestamp, media_url, media_mime_type, media_wa_type, media_size, media_name, media_caption, media_duration, latitude, longitude, " \
+                    "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded, _id FROM messages_quotes WHERE _id IN ({})".format(placeholders)
+                cursor_rep.execute(sql_reply_batch, tuple(quoted_ids))
+                for rep in cursor_rep.fetchall():
+                    preloaded_quotes[rep[-1]] = rep[:-1]
 
-                                if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_name = "&#128227;" + (str(data[0]).split('@'))[0] + gets_name(data[0])
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + " to" + Fore.RESET + " Me" + Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
-                        else:
+            for data in chunk:
+                try:
+                    report_msj = ""   # Saves each message
+                    report_name = ""  # Saves the chat sender
+                    message = ""      # Saves each msg
+                    sys.stdout.write("\rMessage {}/{} - ID {}".format(str(n_mes+1), str(rows), str(data[23])))
+                    sys.stdout.flush()
+
+                    if int(data[8]) != -1:   # media_wa_type -1 "Start DB"
+                        # Groups
+                        if (str(data[0]).split('@'))[1] == "g.us":
                             if int(data[1]) == 1:
-                                if int(data[3]) == 6:  # User system message
+                                if int(data[3]) == 6:  # Group System Message
+                                    if report_var == 'EN':
+                                        report_name = "System Message"
+                                    elif report_var == 'ES':
+                                        report_name = "Mensaje de Sistema"
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
+                                else:  # I send message to a group
+                                    if report_var == 'EN':
+                                        report_name = "Me"
+                                    elif report_var == 'ES':
+                                        report_name = "Yo"
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + "Me" + Fore.GREEN + " to " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
+                            elif int(data[1]) == 0:  # Somebody post a message in a group
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    current_color = color.get((str(data[15]).split('@'))[0])
+                                    if not current_color:
+                                        current_color = "#5586e5"
+                                    report_name = "<font color='{}'> {} </font>".format(current_color, (str(data[15]).split('@'))[0] + gets_name(data[15]))
+                                else:
+                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                    message += Fore.GREEN + "From " + Fore.RESET + data[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + ", participant " + Fore.RESET + (str(data[15]).split('@'))[0] + " " + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + "\n"
+                        # Users
+                        elif (str(data[0]).split('@'))[1] == "s.whatsapp.net":
+                            if data[15] and (str(data[15]).split('@'))[1] == "broadcast":
+                                if int(data[1]) == 1:  # I send to somebody message by broadcast
+                                    if report_var == 'EN':
+                                        report_name = "&#128227; Me"
+                                    elif report_var == 'ES':
+                                        report_name = "&#128227; Yo"
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET +  Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
+                                elif int(data[1]) == 0:  # Someone sends me a message by broadcast
+
+                                    if (report_var == 'EN') or (report_var == 'ES'):
+                                        report_name = "&#128227;" + (str(data[0]).split('@'))[0] + gets_name(data[0])
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + " to" + Fore.RESET + " Me" + Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
+                            else:
+                                if int(data[1]) == 1:
+                                    if int(data[3]) == 6:  # User system message
+                                        if report_var == 'EN':
+                                            report_name = "System Message"
+                                        elif report_var == 'ES':
+                                            report_name = "Mensaje de Sistema"
+                                        else:
+                                            message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                            message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
+                                    else:  # I send message to someone
+                                        if report_var == 'EN':
+                                            report_name = "Me"
+                                        elif report_var == 'ES':
+                                            report_name = "Yo"
+                                        else:
+                                            message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                            message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
+                                elif int(data[1]) == 0:  # Someone sends me a message
+                                    if (report_var == 'EN') or (report_var == 'ES'):
+                                        report_name = (str(data[0]).split('@'))[0] + gets_name(data[0])
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + " to" + Fore.RESET + " Me\n"
+                        # Broadcast and Status
+                        elif (str(data[0]).split('@'))[1] == "broadcast":
+                            # Status
+                            if str(data[0]) == "status@broadcast":
+                                if os.path.isfile(local + "Media/.Statuses") is False:
+                                    Path(local + "Media/.Statuses").mkdir(parents=True)
+                                if int(data[1]) == 1:  # I post a Status
+                                    if report_var == 'EN':
+                                        report_name = "Me"
+                                    elif report_var == 'ES':
+                                        report_name = "Yo"
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + "Me - Post status" + "\n"
+                                elif int(data[1]) == 0:  # Somebody posts a Status
+                                    if report_var == 'EN':
+                                        report_name = "Posts Status - " + (str(data[15]).split('@'))[0] + gets_name(data[15])
+                                    elif report_var == 'ES':
+                                        report_name = "Publica Estado - " + (str(data[15]).split('@'))[0] + gets_name(data[15])
+                                    else:
+                                        message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
+                                        message += Fore.GREEN + "From " + Fore.RESET + (str(data[15]).split('@'))[0] + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + Fore.GREEN + " posts status" + Fore.RESET + "\n"
+                            # Broadcast
+                            else:
+                                if int(data[3]) == 6:  # Broadcast system message
                                     if report_var == 'EN':
                                         report_name = "System Message"
                                     elif report_var == 'ES':
@@ -960,711 +1026,665 @@ def messages(consult, rows, report_html, local):
                                     else:
                                         message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
                                         message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
-                                else:  # I send message to someone
+                                else:  # I send a message to a broadcast list
+                                    list_broadcast = (str(data[15])).replace(',', '').split('@s.whatsapp.net')
+                                    list_copy = []
+                                    for i in list_broadcast:
+                                        list_copy.append(i + " " + Fore.YELLOW +  gets_name(i + "@s.whatsapp.net") + Fore.RESET)
+                                    list_copy.pop()
+                                    list_copy = ", ".join(list_copy)
+
                                     if report_var == 'EN':
-                                        report_name = "Me"
+                                        report_name = "&#128227; Me"
                                     elif report_var == 'ES':
-                                        report_name = "Yo"
+                                        report_name = "&#128227; Yo"
                                     else:
                                         message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                        message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
-                            elif int(data[1]) == 0:  # Someone sends me a message
-                                if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_name = (str(data[0]).split('@'))[0] + gets_name(data[0])
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + Fore.GREEN + " to" + Fore.RESET + " Me\n"
-                    # Broadcast and Status
-                    elif (str(data[0]).split('@'))[1] == "broadcast":
-                        # Status
-                        if str(data[0]) == "status@broadcast":
-                            if os.path.isfile(local + "Media/.Statuses") is False:
-                                Path(local + "Media/.Statuses").mkdir(parents=True)
-                            if int(data[1]) == 1:  # I post a Status
-                                if report_var == 'EN':
-                                    report_name = "Me"
-                                elif report_var == 'ES':
-                                    report_name = "Yo"
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + "Me - Post status" + "\n"
-                            elif int(data[1]) == 0:  # Somebody posts a Status
-                                if report_var == 'EN':
-                                    report_name = "Posts Status - " + (str(data[15]).split('@'))[0] + gets_name(data[15])
-                                elif report_var == 'ES':
-                                    report_name = "Publica Estado - " + (str(data[15]).split('@'))[0] + gets_name(data[15])
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + (str(data[15]).split('@'))[0] + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + Fore.GREEN + " posts status" + Fore.RESET + "\n"
-                        # Broadcast
-                        else:
-                            if int(data[3]) == 6:  # Broadcast system message
-                                if report_var == 'EN':
-                                    report_name = "System Message"
-                                elif report_var == 'ES':
-                                    report_name = "Mensaje de Sistema"
-                                else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From " + Fore.RESET + (str(data[0]).split('@'))[0] + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + "\n"
-                            else:  # I send a message to a broadcast list
-                                list_broadcast = (str(data[15])).replace(',', '').split('@s.whatsapp.net')
-                                list_copy = []
-                                for i in list_broadcast:
-                                    list_copy.append(i + " " + Fore.YELLOW +  gets_name(i + "@s.whatsapp.net") + Fore.RESET)
-                                list_copy.pop()
-                                list_copy = ", ".join(list_copy)
+                                        message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + list_copy + " " + Fore.YELLOW + gets_name(list_copy) + Fore.RESET + Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
 
-                                if report_var == 'EN':
-                                    report_name = "&#128227; Me"
-                                elif report_var == 'ES':
-                                    report_name = "&#128227; Yo"
+                        if int(data[8]) == 0:  # media_wa_type 0, text message
+                            if int(data[3]) == 6:  # Status 6, system message
+                                if data[9] == 1:  # if media_size value change
+                                    if report_var == 'EN':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " changed the subject from '" + html.escape(data[17][7:].decode('UTF-8', 'ignore')) + "' to '" + html.escape(data[4]) + "'"
+                                    elif report_var == 'ES':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " cambió el asunto de '" + html.escape(data[17][7:].decode('UTF-8', 'ignore')) + "' a '" + html.escape(data[4]) + "'"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the subject from '" + data[17][7:].decode('UTF-8', 'ignore') + "' to '" + data[4] + "'\n"
+
+                                elif data[9] == 4:
+                                    if report_var == 'EN':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " was added to the group"
+                                    elif report_var == 'ES':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " fue añadido al grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " was added to the group\n"
+
+                                elif data[9] == 5:
+                                    if report_var == 'EN':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " left the group"
+                                    elif report_var == 'ES':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " dejó el grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " left the group\n"
+
+                                elif data[9] == 6:
+                                    if report_var == 'EN':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " changed the group icon"
+                                    elif report_var == 'ES':
+                                        report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " cambió el icono del grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the group icon\n"
+                                        message += "The last picture is stored on the phone path '/data/data/com.whatsapp/cache/Profile Pictures/" + (data[0].split('@'))[0] + ".jpg'\n"
+
+                                    if data[17]:
+                                        file_created = local + "Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg"
+                                        if os.path.isfile(file_created) is False:
+                                            Path(local + "Media/WhatsApp Profile Pictures").mkdir(parents=True)
+                                            thumb = data[17].split(b'\xFF\xD8\xFF\xE0')[1]
+                                            with open(file_created, 'wb') as profile_file:
+                                                profile_file.write(b'\xFF\xD8\xFF\xE0' + thumb)
+
+                                        if (report_var == 'EN') or (report_var == 'ES'):
+                                            report_msj += "<br>./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg"
+                                            report_msj += "<br><a href=\"./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg\" target=\"_blank\"> <IMG SRC=\"./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg\" width=\"100\" height=\"100\"/></a>"
+                                        else:
+                                            message += "Thumbnail stored on local path './Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + ".jpg'\n"
+
+                                elif data[9] == 7:
+                                    if report_var == 'EN':
+                                        report_msj += " Removed " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " from the list"
+                                    elif report_var == 'ES':
+                                        report_msj += " Removío " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " de la lista"
+                                    else:
+                                        message += Fore.GREEN + "Message:" + Fore.RESET + " Removed " + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " from the list\n"
+
+                                elif data[9] == 9:
+                                    list_broadcast = (str(data[17][58:]).split("\\x00\\x1a"))[1:]
+                                    list_copy = []
+                                    for i in list_broadcast:
+                                        list_copy.append(i.split("@")[0] + gets_name(i.split("@")[0] + "@s.whatsapp.net"))
+
+                                    if report_var == 'EN':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " created a broadcast list with " + ", ".join(list_copy) + " recipients"
+                                    elif report_var == 'ES':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " creó una lista de difusión con " + ", ".join(list_copy) + " destinatarios"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " created a broadcast list with " + ", ".join(list_copy) + " recipients\n"
+
+                                elif data[9] == 10:
+                                    if report_var == 'EN':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed to " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net")
+                                    elif report_var == 'ES':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió a " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net")
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed to " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + "\n"
+
+                                elif data[9] == 11:
+                                    if report_var == 'EN':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " created the group ' " + html.escape(data[4]) + " '"
+                                    elif report_var == 'ES':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " creó el grupo ' " + html.escape(data[4]) + " '"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " created the group '" + data[4] + "'\n"
+
+                                elif data[9] == 12:
+                                    if data[15]:  # If exists remote_resource  - Group
+                                        if report_var == 'EN':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " to the group"
+                                        elif report_var == 'ES':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " añadió " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " al grupo"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " to the group\n"
+
+                                    else:  # User
+                                        if report_var == 'EN':
+                                            report_msj += "Added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " to the group"
+                                        elif report_var == 'ES':
+                                            report_msj += "Se añadió " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " al grupo"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + "Added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + "to the group\n"
+                                elif data[9] == 13:
+                                    list_broadcast = (str(data[17][58:]).split("\\x00\\x1a"))[1:]
+                                    list_copy = []
+                                    for i in list_broadcast:
+                                        list_copy.append(i.split("@")[0] + gets_name(i.split("@")[0] + "@s.whatsapp.net"))
+
+                                    if report_var == 'EN':
+                                        report_msj += ", ".join(list_copy) + " left the group"
+                                    elif report_var == 'ES':
+                                        report_msj += ", ".join(list_copy) + " dejaron el grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + ", ".join(list_copy) + " left the group\n"
+
+                                elif data[9] == 14:
+                                    if report_var == 'EN':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " eliminated " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " from the group"
+                                    elif report_var == 'ES':
+                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " eliminó " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " del grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " eliminated " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " from the group\n"
+
+                                elif data[9] == 15:
+                                    if data[15]:
+                                        if report_var == 'EN':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " made you administrator"
+                                        elif report_var == 'ES':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " te hizo administrador"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + "made you administrator\n"
+                                    else:
+                                        if report_var == 'EN':
+                                            report_msj += "They made you administrator"
+                                        elif report_var == 'ES':
+                                            report_msj += "Te hicieron administrador"
+                                        else:
+                                            message += Fore.GREEN + "Message: They made you administrator\n"
+
+                                elif data[9] == 18:
+                                    if data[15]:
+                                        if report_var == 'EN':
+                                            report_msj += "The security code of " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed"
+                                        elif report_var == 'ES':
+                                            report_msj += "El código de seguridad de " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + "The security code of " + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed\n"
+
+                                    else:
+                                        if report_var == 'EN':
+                                            report_msj += "The security code of " + data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " changed"
+                                        elif report_var == 'ES':
+                                            report_msj += "El código de seguridad de " + data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " cambió"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + "The security code of " + data[0].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + " changed\n"
+
+                                elif data[9] == 19:
+                                    if report_var == 'EN':
+                                        report_msj += "Messages and calls in this chat are now protected with end-to-end encryption"
+                                    elif report_var == 'ES':
+                                        report_msj += "Los mensajes y llamadas en este chat ahora están protegidos con cifrado de extremo a extremo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + "Messages and calls in this chat are now protected with end-to-end encryption\n"
+
+                                elif data[9] == 20:
+                                    if report_var == 'EN':
+                                        report_msj += (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " joined using an invitation link from this group"
+                                    elif report_var == 'ES':
+                                        report_msj += (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " se unió usando un enlace de invitación de este grupo"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " joined using an invitation link from this group\n"
+
+                                elif data[9] == 22:
+                                    if report_var == 'EN':
+                                        report_msj += "This chat could be with a company account"
+                                    elif report_var == 'ES':
+                                        report_msj += "Este chat podría ser con una cuenta de empresa"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + "This chat could be with a company account\n"
+
+                                elif data[9] == 27:
+                                    if data[4] != "":
+                                        if report_var == 'EN':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed the group description to ' " + html.escape(data[4]) + " '"
+                                        elif report_var == 'ES':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió la descripción del grupo a ' " + html.escape(data[4]) + " '"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the group description to '" + data[4] + "'\n"
+
+                                    else:
+                                        if report_var == 'EN':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " deleted the group description"
+                                        elif report_var == 'ES':
+                                            report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " borró la descripción del grupo"
+                                        else:
+                                            message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " deleted the group description\n"
+
+                                elif data[9] == 28:
+                                    if report_var == 'EN':
+                                        report_msj += data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " changed his phone number"
+                                    elif report_var == 'ES':
+                                        report_msj += data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " cambió su número de teléfono"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[0].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + " changed his phone number\n"
+
+                                elif data[9] == 46:
+                                    if report_var == 'EN':
+                                        report_msj += "This chat is with a company account"
+                                    elif report_var == 'ES':
+                                        report_msj += "Este chat es con una cuenta de empresa"
+                                    else:
+                                        message += Fore.GREEN + "Message: " + Fore.RESET + "This chat is with a company account\n"
+
                                 else:
-                                    message = Fore.RED + "\n--------------------------------------------------------------------------------" + Fore.RESET + "\n"
-                                    message += Fore.GREEN + "From" + Fore.RESET + " Me" + Fore.GREEN + " to " + Fore.RESET + list_copy + " " + Fore.YELLOW + gets_name(list_copy) + Fore.RESET + Fore.GREEN + " by broadcast" + Fore.RESET + "\n"
+                                    print("\nUnknow system message: {}, Message ID {}, Timestamp {}".format(e, str(data[23]), time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))))
+                                    print("Contact the creator of Whapa to include this new type of identified control messaging.")
 
-                    if int(data[8]) == 0:  # media_wa_type 0, text message
-                        if int(data[3]) == 6:  # Status 6, system message
-                            if data[9] == 1:  # if media_size value change
-                                if report_var == 'EN':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " changed the subject from '" + html.escape(data[17][7:].decode('UTF-8', 'ignore')) + "' to '" + html.escape(data[4]) + "'"
-                                elif report_var == 'ES':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " cambió el asunto de '" + html.escape(data[17][7:].decode('UTF-8', 'ignore')) + "' a '" + html.escape(data[4]) + "'"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the subject from '" + data[17][7:].decode('UTF-8', 'ignore') + "' to '" + data[4] + "'\n"
+                            else:
+                                if data[24] and int(data[24]) > 0:  # Forwarded
+                                    if int(data[24]) < 5:
+                                        if report_var == 'EN':
+                                            report_msj += "<font color=\"#8b8878\" >&#10150; Forwarded</font><br>"
+                                        elif report_var == 'ES':
+                                            report_msj += "<font color=\"#8b8878\" >&#10150; Reenviado</font><br>"
+                                        else:
+                                            message += Fore.GREEN + "Forwarded" + Fore.RESET + "\n"
+                                    else:
+                                        if report_var == 'EN':
+                                            report_msj += "<font color=\"#8b8878\" >&#10150;&#10150; Forwarded many times</font><br>"
+                                        elif report_var == 'ES':
+                                            report_msj += "<font color=\"#8b8878\" >&#10150;&#10150; Reenviado muchas veces</font><br>"
+                                        else:
+                                            message += Fore.GREEN + "Forwarded many times" + Fore.RESET + "\n"
 
-                            elif data[9] == 4:
-                                if report_var == 'EN':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " was added to the group"
-                                elif report_var == 'ES':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " fue añadido al grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " was added to the group\n"
-
-                            elif data[9] == 5:
-                                if report_var == 'EN':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " left the group"
-                                elif report_var == 'ES':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " dejó el grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " left the group\n"
-
-                            elif data[9] == 6:
-                                if report_var == 'EN':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " changed the group icon"
-                                elif report_var == 'ES':
-                                    report_msj += str(data[15].strip("@s.whatsapp.net")) + gets_name(data[15]) + " cambió el icono del grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the group icon\n"
-                                    message += "The last picture is stored on the phone path '/data/data/com.whatsapp/cache/Profile Pictures/" + (data[0].split('@'))[0] + ".jpg'\n"
-
-                                if data[17]:
-                                    file_created = local + "Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg"
-                                    if os.path.isfile(file_created) is False:
-                                        Path(local + "Media/WhatsApp Profile Pictures").mkdir(parents=True)
-                                        thumb = data[17].split(b'\xFF\xD8\xFF\xE0')[1]
-                                        with open(file_created, 'wb') as profile_file:
-                                            profile_file.write(b'\xFF\xD8\xFF\xE0' + thumb)
-
+                                if data[21] and int(data[21]) > 0:  # Reply
                                     if (report_var == 'EN') or (report_var == 'ES'):
-                                        report_msj += "<br>./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg"
-                                        report_msj += "<br><a href=\"./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg\" target=\"_blank\"> <IMG SRC=\"./Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + str(data[2]) + ".jpg\" width=\"100\" height=\"100\"/></a>"
+                                        report_msj = "<p style=\"border-left: 6px solid blue; background-color: lightgrey;border-radius:5px;\"; > " + \
+                                                     reply(data[21], local)[1] + "</p>"
                                     else:
-                                        message += "Thumbnail stored on local path './Media/WhatsApp Profile Pictures/" + (data[0].split('@'))[0] + "-" + ".jpg'\n"
+                                        message += Fore.RED + "Replying to: " + Fore.RESET + reply(data[21], local)[0] + "\n"
 
-                            elif data[9] == 7:
-                                if report_var == 'EN':
-                                    report_msj += " Removed " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " from the list"
-                                elif report_var == 'ES':
-                                    report_msj += " Removío " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " de la lista"
-                                else:
-                                    message += Fore.GREEN + "Message:" + Fore.RESET + " Removed " + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " from the list\n"
-
-                            elif data[9] == 9:
-                                list_broadcast = (str(data[17][58:]).split("\\x00\\x1a"))[1:]
-                                list_copy = []
-                                for i in list_broadcast:
-                                    list_copy.append(i.split("@")[0] + gets_name(i.split("@")[0] + "@s.whatsapp.net"))
-
-                                if report_var == 'EN':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " created a broadcast list with " + ", ".join(list_copy) + " recipients"
-                                elif report_var == 'ES':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " creó una lista de difusión con " + ", ".join(list_copy) + " destinatarios"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " created a broadcast list with " + ", ".join(list_copy) + " recipients\n"
-
-                            elif data[9] == 10:
-                                if report_var == 'EN':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed to " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net")
-                                elif report_var == 'ES':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió a " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net")
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed to " + (data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][7:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + "\n"
-
-                            elif data[9] == 11:
-                                if report_var == 'EN':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " created the group ' " + html.escape(data[4]) + " '"
-                                elif report_var == 'ES':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " creó el grupo ' " + html.escape(data[4]) + " '"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " created the group '" + data[4] + "'\n"
-
-                            elif data[9] == 12:
-                                if data[15]:  # If exists remote_resource  - Group
-                                    if report_var == 'EN':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " to the group"
-                                    elif report_var == 'ES':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " añadió " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " al grupo"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " to the group\n"
-
-                                else:  # User
-                                    if report_var == 'EN':
-                                        report_msj += "Added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " to the group"
-                                    elif report_var == 'ES':
-                                        report_msj += "Se añadió " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " al grupo"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + "Added " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + "to the group\n"
-                            elif data[9] == 13:
-                                list_broadcast = (str(data[17][58:]).split("\\x00\\x1a"))[1:]
-                                list_copy = []
-                                for i in list_broadcast:
-                                    list_copy.append(i.split("@")[0] + gets_name(i.split("@")[0] + "@s.whatsapp.net"))
-
-                                if report_var == 'EN':
-                                    report_msj += ", ".join(list_copy) + " left the group"
-                                elif report_var == 'ES':
-                                    report_msj += ", ".join(list_copy) + " dejaron el grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + ", ".join(list_copy) + " left the group\n"
-
-                            elif data[9] == 14:
-                                if report_var == 'EN':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " eliminated " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " from the group"
-                                elif report_var == 'ES':
-                                    report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " eliminó " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " del grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " eliminated " + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " from the group\n"
-
-                            elif data[9] == 15:
-                                if data[15]:
-                                    if report_var == 'EN':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " made you administrator"
-                                    elif report_var == 'ES':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " te hizo administrador"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + "made you administrator\n"
-                                else:
-                                    if report_var == 'EN':
-                                        report_msj += "They made you administrator"
-                                    elif report_var == 'ES':
-                                        report_msj += "Te hicieron administrador"
-                                    else:
-                                        message += Fore.GREEN + "Message: They made you administrator\n"
-
-                            elif data[9] == 18:
-                                if data[15]:
-                                    if report_var == 'EN':
-                                        report_msj += "The security code of " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed"
-                                    elif report_var == 'ES':
-                                        report_msj += "El código de seguridad de " + data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + "The security code of " + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed\n"
-
-                                else:
-                                    if report_var == 'EN':
-                                        report_msj += "The security code of " + data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " changed"
-                                    elif report_var == 'ES':
-                                        report_msj += "El código de seguridad de " + data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " cambió"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + "The security code of " + data[0].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + " changed\n"
-
-                            elif data[9] == 19:
-                                if report_var == 'EN':
-                                    report_msj += "Messages and calls in this chat are now protected with end-to-end encryption"
-                                elif report_var == 'ES':
-                                    report_msj += "Los mensajes y llamadas en este chat ahora están protegidos con cifrado de extremo a extremo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + "Messages and calls in this chat are now protected with end-to-end encryption\n"
-
-                            elif data[9] == 20:
-                                if report_var == 'EN':
-                                    report_msj += (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " joined using an invitation link from this group"
-                                elif report_var == 'ES':
-                                    report_msj += (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + " se unió usando un enlace de invitación de este grupo"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + (data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + Fore.YELLOW + gets_name((data[17][60:].decode('UTF-8', 'ignore').split('@'))[0] + "@s.whatsapp.net") + Fore.RESET + " joined using an invitation link from this group\n"
-
-                            elif data[9] == 22:
-                                if report_var == 'EN':
-                                    report_msj += "This chat could be with a company account"
-                                elif report_var == 'ES':
-                                    report_msj += "Este chat podría ser con una cuenta de empresa"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + "This chat could be with a company account\n"
-
-                            elif data[9] == 27:
-                                if data[4] != "":
-                                    if report_var == 'EN':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " changed the group description to ' " + html.escape(data[4]) + " '"
-                                    elif report_var == 'ES':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " cambió la descripción del grupo a ' " + html.escape(data[4]) + " '"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " changed the group description to '" + data[4] + "'\n"
-
-                                else:
-                                    if report_var == 'EN':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " deleted the group description"
-                                    elif report_var == 'ES':
-                                        report_msj += data[15].strip("@s.whatsapp.net") + gets_name(data[15]) + " borró la descripción del grupo"
-                                    else:
-                                        message += Fore.GREEN + "Message: " + Fore.RESET + data[15].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[15]) + Fore.RESET + " deleted the group description\n"
-
-                            elif data[9] == 28:
-                                if report_var == 'EN':
-                                    report_msj += data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " changed his phone number"
-                                elif report_var == 'ES':
-                                    report_msj += data[0].strip("@s.whatsapp.net") + gets_name(data[0]) + " cambió su número de teléfono"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[0].strip("@s.whatsapp.net") + Fore.YELLOW + gets_name(data[0]) + Fore.RESET + " changed his phone number\n"
-
-                            elif data[9] == 46:
-                                if report_var == 'EN':
-                                    report_msj += "This chat is with a company account"
-                                elif report_var == 'ES':
-                                    report_msj += "Este chat es con una cuenta de empresa"
-                                else:
-                                    message += Fore.GREEN + "Message: " + Fore.RESET + "This chat is with a company account\n"
-
-                            else:
-                                print("\nUnknow system message: {}, Message ID {}, Timestamp {}".format(e, str(data[23]), time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))))
-                                print("Contact the creator of Whapa to include this new type of identified control messaging.")
-
-                        else:
-                            if data[24] and int(data[24]) > 0:  # Forwarded
-                                if int(data[24]) < 5:
-                                    if report_var == 'EN':
-                                        report_msj += "<font color=\"#8b8878\" >&#10150; Forwarded</font><br>"
-                                    elif report_var == 'ES':
-                                        report_msj += "<font color=\"#8b8878\" >&#10150; Reenviado</font><br>"
-                                    else:
-                                        message += Fore.GREEN + "Forwarded" + Fore.RESET + "\n"
-                                else:
-                                    if report_var == 'EN':
-                                        report_msj += "<font color=\"#8b8878\" >&#10150;&#10150; Forwarded many times</font><br>"
-                                    elif report_var == 'ES':
-                                        report_msj += "<font color=\"#8b8878\" >&#10150;&#10150; Reenviado muchas veces</font><br>"
-                                    else:
-                                        message += Fore.GREEN + "Forwarded many times" + Fore.RESET + "\n"
-
-                            if data[21] and int(data[21]) > 0:  # Reply
                                 if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_msj = "<p style=\"border-left: 6px solid blue; background-color: lightgrey;border-radius:5px;\"; > " + \
-                                                 reply(data[21], local)[1] + "</p>"
+                                    report_msj += html.escape(data[4])
                                 else:
-                                    message += Fore.RED + "Replying to: " + Fore.RESET + reply(data[21], local)[0] + "\n"
+                                    message += Fore.GREEN + "Message: " + Fore.RESET + data[4] + "\n"
 
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += html.escape(data[4])
+                        elif int(data[8]) == 1:  # media_wa_type 1, Image
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Image doesn't exist
+                                thumb = "Not downloaded"
                             else:
-                                message += Fore.GREEN + "Message: " + Fore.RESET + data[4] + "\n"
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
 
-                    elif int(data[8]) == 1:  # media_wa_type 1, Image
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Image doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if data[11]:  # media_caption
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb + " - " + html.escape(data[11])
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
-                        else:
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += " " + size_file(data[9])
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + "image/jpeg" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + "\n"
-
-                        if thumb != "Not downloaded":
-                            thumb = local + thumb[2:]
-
-                        if os.path.isfile(thumb) is False:
-                            Path(local + "Media/WhatsApp Images/Sent").mkdir(parents=True)
-                            if thumb == "Not downloaded":
-                                if int(data[1]) == 1:
-                                    thumb = local + "Media/WhatsApp Images/Sent/IMG-" + str(data[2]) + "-NotDownloaded.jpg"
-                                else:
-                                    thumb = local + "Media/WhatsApp Images/IMG-" + str(data[2]) + "-NotDownloaded.jpg"
-
-                            with open(thumb, 'wb') as profile_file:
-                                if data[19]:    # raw_data exists
-                                    profile_file.write(data[19])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                elif data[22]:  # Gets the thumbnail of the message_thumbnails
-                                    profile_file.write(data[22])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                else:
-                                    profile_file.write(b"")
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            number = thumb.rfind("Media/WhatsApp Images/")
-                            thumb = thumb[number-1:].replace("\\", "/")
-                            report_msj += " <br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + " 'width=\"100\" height=\"100\"/></a>"
-
-                    elif int(data[8]) == 2:  # media_wa_type 2, Audio
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Audio doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += "<br>" + thumb + " " + size_file(data[9]) + " - " + duration_file(data[12]) + "<br></br><audio controls> <source src=\"" + thumb + "\" type=\"" + data[7] + "\"</audio>"
-                        else:
-                            message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
-                            message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
-
-                    elif int(data[8]) == 3:  # media_wa_type 3 Video
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Video doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if data[11]:  # media_caption
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb + " - " + html.escape(data[11])
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
-                        else:
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += " " + size_file(data[9]) + " - " + duration_file(data[12])
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
-
-                        if thumb != "Not downloaded":
-                            thumb = local + thumb[2:]
-
-                        if os.path.isfile(thumb) is False:
-                            Path(local + "Media/WhatsApp Video/Sent").mkdir(parents=True)
-                            if thumb == "Not downloaded":
-                                if int(data[1]) == 1:
-                                    thumb = local + "Media/WhatsApp Video/Sent/VID-" + str(data[2]) + "-NotDownloaded.mp4"
-                                else:
-                                    thumb = local + "Media/WhatsApp Video/VID-" + str(data[2]) + "-NotDownloaded.mp4"
-
-                            with open(thumb, 'wb') as profile_file:
-                                if data[19]:  # raw_data exists
-                                    profile_file.write(data[19])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                elif data[22]:  # Gets the thumbnail of the message_thumbnails
-                                    profile_file.write(data[22])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                else:
-                                    profile_file.write(b"")
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            number = thumb.rfind("Media/WhatsApp Video/")
-                            thumb = thumb[number-1:].replace("\\", "/")
-                            report_msj += "<br/> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
-
-                    elif int(data[8]) == 4:  # media_wa_type 4, Contact
-                        if report_var == 'EN':
-                            report_msj += html.escape(data[10]) + "<br>&#9742;  Contact vCard"
-                        elif report_var == 'ES':
-                            report_msj += html.escape(data[10]) + "<br>&#9742;  Contacto vCard"
-                        else:
-                            message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + Fore.GREEN + " - Type:" + Fore.RESET + " Contact vCard\n"
-
-                    elif int(data[8]) == 5:  # media_wa_type 5, Location
-                        if data[6]:  # media_url exists
-                            if data[10]:  # media_name exists
+                            if data[11]:  # media_caption
                                 if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_msj += html.escape(data[6]) + " - " + html.escape(data[10]) + "<br>"
+                                    report_msj += thumb + " - " + html.escape(data[11])
                                 else:
-                                    message += Fore.GREEN + "Url: " + Fore.RESET + data[6] + Fore.GREEN + " - Name: " + Fore.RESET + data[10] + "\n"
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
                             else:
                                 if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_msj += html.escape(data[6]) + "<br>"
+                                    report_msj += thumb
                                 else:
-                                    message += Fore.GREEN + "Url: " + Fore.RESET + data[6] + "\n"
-                        else:
-                            if data[10]:
-                                if (report_var == 'EN') or (report_var == 'ES'):
-                                    report_msj += html.escape(data[10]) + "<br>"
-                                else:
-                                    message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + "\n"
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
 
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += "<iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={}%2C{}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>".format(str(data[13]), str(data[14]))
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + "Location" + Fore.GREEN + " - Lat: " + Fore.RESET + str(data[13]) + Fore.GREEN + " - Long: " + Fore.RESET + str(data[14]) + "\n"
-
-                    elif int(data[8]) == 8:  # media_wa_type 8, Audio / Video Call
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += "&#128222; " + str(data[11]).capitalize() + " " + duration_file(data[12])
-                        else:
-                            message += Fore.GREEN + "Call :" + Fore.RESET + str(data[11]).capitalize() + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
-
-                    elif int(data[8]) == 9:  # media_wa_type 9, Application
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Image doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if data[11]:  # media_caption
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb + " - " + html.escape(data[11])
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
-                        else:
-                            if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb
-                            else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
-
-                        if data[12] >= 0:
-                            if report_var == 'EN':
-                                report_msj += " " + size_file(data[9]) + " - " + str(data[12]) + " Pages"
-                            elif report_var == 'ES':
-                                report_msj += " " + size_file(data[9]) + " - " + str(data[12]) + " Páginas"
-                            else:
-                                message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Pages: " + Fore.RESET + str(data[12]) + "\n"
-                        else:
                             if (report_var == 'EN') or (report_var == 'ES'):
                                 report_msj += " " + size_file(data[9])
                             else:
-                                message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + "\n"
+                                message += Fore.GREEN + "Type: " + Fore.RESET + "image/jpeg" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + "\n"
 
-                        if thumb != "Not downloaded":
-                            thumb = local + thumb[2:]
+                            if thumb != "Not downloaded":
+                                thumb = local + thumb[2:]
 
-                        if os.path.isfile(thumb + ".jpg") is False:
-                            Path(local + "Media/WhatsApp Documents/Sent").mkdir(parents=True)
-                            if thumb == "Not downloaded":
-                                if int(data[1]) == 1:
-                                    thumb = local + "Media/WhatsApp Documents/Sent/DOC-" + str(data[2]) + "-NotDownloaded"
-                                else:
-                                    thumb = local + "Media/WhatsApp Documents/DOC-" + str(data[2]) + "-NotDownloaded"
+                            if os.path.isfile(thumb) is False:
+                                Path(local + "Media/WhatsApp Images/Sent").mkdir(parents=True)
+                                if thumb == "Not downloaded":
+                                    if int(data[1]) == 1:
+                                        thumb = local + "Media/WhatsApp Images/Sent/IMG-" + str(data[2]) + "-NotDownloaded.jpg"
+                                    else:
+                                        thumb = local + "Media/WhatsApp Images/IMG-" + str(data[2]) + "-NotDownloaded.jpg"
 
-                            with open(thumb + ".jpg", 'wb') as profile_file:
-                                if data[19]:
-                                    profile_file.write(data[19])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + ".jpg'\n"
-                                elif data[22]:
-                                    profile_file.write(data[22])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + ".jpg'\n"
-                                else:
-                                    profile_file.write(b"")
+                                with open(thumb, 'wb') as profile_file:
+                                    if data[19]:    # raw_data exists
+                                        profile_file.write(data[19])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    elif data[22]:  # Gets the thumbnail of the message_thumbnails
+                                        profile_file.write(data[22])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    else:
+                                        profile_file.write(b"")
 
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            number = thumb.rfind("Media/WhatsApp Documents/")
-                            thumb = thumb[number-1:].replace("\\", "/")
-                            report_msj += "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + ".jpg' width=\"100\" height=\"100\"/></a>"
-
-                    elif int(data[8]) == 10:  # media_wa_type 10, Video/Audio call lost
-                        if report_var == 'EN':
-                            report_msj += "&#128222; Missed" + str(data[11]).capitalize() + " call"
-                        elif report_var == 'ES':
-                            report_msj += "&#128222; " + str(data[11]).capitalize() + " llamada perdida"
-                        else:
-                            message += Fore.GREEN + "Message: " + Fore.RESET + "Missed " + str(data[11]).capitalize() + " call\n"
-
-                    elif int(data[8]) == 11:  # media_wa_type 11, Waiting for message
-                        if report_var == 'EN':
-                            report_msj += "<p style=\"color:#FF0000\";>&#9842; Waiting for message. This may take time </p>"
-                        elif report_var == 'ES':
-                            report_msj += "<p style=\"color:#FF0000\";>&#9842; Esperando mensaje. Esto puede tomar tiempo</p>"
-                        else:
-                            message += Fore.GREEN + "Message: " + Fore.RESET + "Waiting for message. This may take time\n"
-
-                    elif int(data[8]) == 13:  # media_wa_type 13 Gif
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Gif doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if data[11]:  # media_caption
                             if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb + " - " + html.escape(data[11])
+                                number = thumb.rfind("Media/WhatsApp Images/")
+                                thumb = thumb[number-1:].replace("\\", "/")
+                                report_msj += " <br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + " 'width=\"100\" height=\"100\"/></a>"
+
+                        elif int(data[8]) == 2:  # media_wa_type 2, Audio
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Audio doesn't exist
+                                thumb = "Not downloaded"
                             else:
-                                message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
-                        else:
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
+
                             if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += thumb
+                                report_msj += "<br>" + thumb + " " + size_file(data[9]) + " - " + duration_file(data[12]) + "<br></br><audio controls> <source src=\"" + thumb + "\" type=\"" + data[7] + "\"</audio>"
                             else:
                                 message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
+                                message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
 
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            report_msj += " - Gif - " + size_file(data[9]) + " " + duration_file(data[12])
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + "Gif" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
-
-                        if thumb != "Not downloaded":
-                            thumb = local + thumb[2:]
-
-                        if os.path.isfile(thumb) is False:
-                            Path(local + "Media/WhatsApp Animated Gifs/Sent").mkdir(parents=True)
-                            if thumb == "Not downloaded":
-                                if int(data[1]) == 1:
-                                    thumb = local + "Media/WhatsApp Animated Gifs/Sent/VID-" + str(data[2]) + "-NotDownloaded.mp4"
-                                else:
-                                    thumb = local + "Media/WhatsApp Animated Gifs/VID-" + str(data[2]) + "-NotDownloaded.mp4"
-
-                            with open(thumb, 'wb') as profile_file:
-                                if data[19]:  # raw_data exists
-                                    profile_file.write(data[19])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                elif data[22]:  # Gets the thumbnail of the message_thumbnails
-                                    profile_file.write(data[22])
-                                    if report_var == 'None':
-                                        message += "Thumbnail was saved on local path '" + thumb + "'\n"
-                                else:
-                                    profile_file.write(b"")
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            number = thumb.rfind("Media/WhatsApp Animated Gifs/")
-                            thumb = thumb[number-1:].replace("\\", "/")
-                            report_msj += "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
-
-                    elif int(data[8]) == 14:  # media_wa_type 14  Vcard multiples
-                        concat = ""
-                        chain = str(data[19]).split('BEGIN:VCARD')
-                        for i in chain[1:]:
-                            concat += "BEGIN:VCARD"
-                            concat += i.split('END:VCARD')[0] + "END:VCARD"
-
-                        if report_var == 'EN':
-                            report_msj += html.escape(data[10]) + "<br>&#9742;  Contact vCard</br>" + html.escape(concat)
-                        elif report_var == 'ES':
-                            report_msj += html.escape(data[10]) + "<br>&#9742;  Contacto vCard</br>" + html.escape(concat)
-                        else:
-                            message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + Fore.GREEN + " - Type:" + Fore.RESET + " Contact vCard" + concat + "\n"
-
-                    elif int(data[8]) == 15:  # media_wa_type 15, Deleted Object
-                        if int(data[16]) == 5:  # edit_version 5, deleted for me
-                            if report_var == 'EN':
-                                report_msj += "Message deleted for Me"
-                            elif report_var == 'ES':
-                                report_msj += "Mensaje eliminado para mí"
+                        elif int(data[8]) == 3:  # media_wa_type 3 Video
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Video doesn't exist
+                                thumb = "Not downloaded"
                             else:
-                                message += Fore.GREEN + "Message: " + Fore.RESET + "Message deleted for Me\n"
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
 
-                        elif int(data[16]) == 7:  # edit_version 7, deleted for all
-                            if report_var == 'EN':
-                                report_msj += "Message deleted for all participants"
-                            elif report_var == 'ES':
-                                report_msj += "Mensaje eliminado para todos los destinatarios"
+                            if data[11]:  # media_caption
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb + " - " + html.escape(data[11])
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
                             else:
-                                message += Fore.GREEN + "Message: " + Fore.RESET + "Message deleted for all participants\n"
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
 
-                    elif int(data[8]) == 16:  # media_wa_type 16, Share location
-                        caption = ""
-                        if data[11]:
-                            caption = data[11]
-
-                        if report_var == 'EN':
-                            report_msj += "Real time location (" + str(data[13]) + "," + str(data[14]) + ") - " + html.escape(caption) + "\n"
-                            report_msj += " <br><a href=\"https://www.google.es/maps/search/(" + str(data[13]) + "," + str(data[14]) + ")\" target=\"_blank\"> <img src=\"http://maps.google.com/maps/api/staticmap?center=" + str(data[13]) + "," + str(data[14]) + "&zoom=16&size=300x150&markers=size:mid|color:red|label:A|" + str(data[13]) + "," + str(data[14]) + "&sensor=false\"/></a>"
-                        elif report_var == 'ES':
-                            report_msj += "Ubicación en tiempo real (" + str(data[13]) + "," + str(data[14]) + ") - " + html.escape(caption) + "\n"
-                            report_msj += "<br><iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={}%2C{}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>".format(str(data[13]), str(data[14]))
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + "Real time location " + Fore.GREEN + "- Caption: " + Fore.RESET + caption + Fore.GREEN + " - Lat: " + Fore.RESET + str(data[13]) + Fore.GREEN + " - Long: " + Fore.RESET + str(data[14]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
-
-                    elif int(data[8]) == 20:  # media_wa_type 20 Sticker
-                        chain = data[17].split(b'\x77\x02')[0]
-                        i = chain.rfind(b"Media/")
-                        b = len(chain)
-                        if i == -1:  # Audio doesn't exist
-                            thumb = "Not downloaded"
-                        else:
-                            thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
-
-                        if (report_var == 'EN') or (report_var == 'ES'):
-                            number = thumb.rfind("Media/WhatsApp Stickers/")
-                            thumb = thumb[number-1:].replace("\\", "/")
-                            report_msj += " Sticker - " + size_file(data[9]) + "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
-                        else:
-                            message += Fore.GREEN + "Type: " + Fore.RESET + "Sticker" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + "\n"
-
-                    if data[20]:
-                        if int(data[20]) == 1:
                             if (report_var == 'EN') or (report_var == 'ES'):
-                                report_msj += "<br> &#127775;"
+                                report_msj += " " + size_file(data[9]) + " - " + duration_file(data[12])
                             else:
-                                message += Fore.YELLOW + "Starred message " + Fore.RESET + "\n"
+                                message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
 
-                    main_status, report_status = status(int(data[3]))
+                            if thumb != "Not downloaded":
+                                thumb = local + thumb[2:]
 
-                    if (report_var == 'EN') or (report_var == 'ES'):
-                        report_time = time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))
-                        if (report_name == "Me") or (report_name == "&#128227; Me") or (report_name == "Yo") or (report_name == "&#128227; Yo"):
-                            rep_med += """
-            <li>
-                <div class="bubble2">
-                    <span class="personSay2">""" + report_msj + """</span><br>
-                    <span class="time2 round">""" + report_time + "&nbsp" + report_status + """</span><br>
-                </div>
-            </li>"""
-                        elif (report_name == "System Message") or (report_name == "Mensaje de Sistema"):
-                            rep_med += """
-            <li>
-                <div class="bubble-system"> 
-                    <span class="time-system round">""" + report_time + "&nbsp" + report_status + """</span><br>
-                    <span class="person-System">""" + report_msj + """</span><br>
-                </div>
-            </li>"""
-                        else:
-                            rep_med += """
-            <li>
-                <div class="bubble"> 
-                    <span class="personName">""" + report_name + """</span><br><br>
-                    <span class="personSay">""" + report_msj + """</span><br>
-                    <span class="time round">""" + report_time + "&nbsp" + report_status + """</span><br>
-                </div>
-            </li>"""
+                            if os.path.isfile(thumb) is False:
+                                Path(local + "Media/WhatsApp Video/Sent").mkdir(parents=True)
+                                if thumb == "Not downloaded":
+                                    if int(data[1]) == 1:
+                                        thumb = local + "Media/WhatsApp Video/Sent/VID-" + str(data[2]) + "-NotDownloaded.mp4"
+                                    else:
+                                        thumb = local + "Media/WhatsApp Video/VID-" + str(data[2]) + "-NotDownloaded.mp4"
 
-                    elif report_var == 'None':
-                        message += Fore.GREEN + "Timestamp: " + Fore.RESET + time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000)) + Fore.GREEN + " - Status: " + Fore.RESET + main_status + "\n"
-                        print(message)
+                                with open(thumb, 'wb') as profile_file:
+                                    if data[19]:  # raw_data exists
+                                        profile_file.write(data[19])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    elif data[22]:  # Gets the thumbnail of the message_thumbnails
+                                        profile_file.write(data[22])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    else:
+                                        profile_file.write(b"")
 
-                n_mes += 1
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                number = thumb.rfind("Media/WhatsApp Video/")
+                                thumb = thumb[number-1:].replace("\\", "/")
+                                report_msj += "<br/> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
 
-            except Exception as e:
-                print("\nError showing message details: {}, Message ID {}, Timestamp {}".format(e, str(data[23]), time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))))
-                n_mes += 1
-                continue
+                        elif int(data[8]) == 4:  # media_wa_type 4, Contact
+                            if report_var == 'EN':
+                                report_msj += html.escape(data[10]) + "<br>&#9742;  Contact vCard"
+                            elif report_var == 'ES':
+                                report_msj += html.escape(data[10]) + "<br>&#9742;  Contacto vCard"
+                            else:
+                                message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + Fore.GREEN + " - Type:" + Fore.RESET + " Contact vCard\n"
+
+                        elif int(data[8]) == 5:  # media_wa_type 5, Location
+                            if data[6]:  # media_url exists
+                                if data[10]:  # media_name exists
+                                    if (report_var == 'EN') or (report_var == 'ES'):
+                                        report_msj += html.escape(data[6]) + " - " + html.escape(data[10]) + "<br>"
+                                    else:
+                                        message += Fore.GREEN + "Url: " + Fore.RESET + data[6] + Fore.GREEN + " - Name: " + Fore.RESET + data[10] + "\n"
+                                else:
+                                    if (report_var == 'EN') or (report_var == 'ES'):
+                                        report_msj += html.escape(data[6]) + "<br>"
+                                    else:
+                                        message += Fore.GREEN + "Url: " + Fore.RESET + data[6] + "\n"
+                            else:
+                                if data[10]:
+                                    if (report_var == 'EN') or (report_var == 'ES'):
+                                        report_msj += html.escape(data[10]) + "<br>"
+                                    else:
+                                        message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + "\n"
+
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                report_msj += "<iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={}%2C{}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>".format(str(data[13]), str(data[14]))
+                            else:
+                                message += Fore.GREEN + "Type: " + Fore.RESET + "Location" + Fore.GREEN + " - Lat: " + Fore.RESET + str(data[13]) + Fore.GREEN + " - Long: " + Fore.RESET + str(data[14]) + "\n"
+
+                        elif int(data[8]) == 8:  # media_wa_type 8, Audio / Video Call
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                report_msj += "&#128222; " + str(data[11]).capitalize() + " " + duration_file(data[12])
+                            else:
+                                message += Fore.GREEN + "Call :" + Fore.RESET + str(data[11]).capitalize() + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
+
+                        elif int(data[8]) == 9:  # media_wa_type 9, Application
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Image doesn't exist
+                                thumb = "Not downloaded"
+                            else:
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
+
+                            if data[11]:  # media_caption
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb + " - " + html.escape(data[11])
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
+                            else:
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
+
+                            if data[12] >= 0:
+                                if report_var == 'EN':
+                                    report_msj += " " + size_file(data[9]) + " - " + str(data[12]) + " Pages"
+                                elif report_var == 'ES':
+                                    report_msj += " " + size_file(data[9]) + " - " + str(data[12]) + " Páginas"
+                                else:
+                                    message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Pages: " + Fore.RESET + str(data[12]) + "\n"
+                            else:
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += " " + size_file(data[9])
+                                else:
+                                    message += Fore.GREEN + "Type: " + Fore.RESET + data[7] + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + "\n"
+
+                            if thumb != "Not downloaded":
+                                thumb = local + thumb[2:]
+
+                            if os.path.isfile(thumb + ".jpg") is False:
+                                Path(local + "Media/WhatsApp Documents/Sent").mkdir(parents=True)
+                                if thumb == "Not downloaded":
+                                    if int(data[1]) == 1:
+                                        thumb = local + "Media/WhatsApp Documents/Sent/DOC-" + str(data[2]) + "-NotDownloaded"
+                                    else:
+                                        thumb = local + "Media/WhatsApp Documents/DOC-" + str(data[2]) + "-NotDownloaded"
+
+                                with open(thumb + ".jpg", 'wb') as profile_file:
+                                    if data[19]:
+                                        profile_file.write(data[19])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + ".jpg'\n"
+                                    elif data[22]:
+                                        profile_file.write(data[22])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + ".jpg'\n"
+                                    else:
+                                        profile_file.write(b"")
+
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                number = thumb.rfind("Media/WhatsApp Documents/")
+                                thumb = thumb[number-1:].replace("\\", "/")
+                                report_msj += "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + ".jpg' width=\"100\" height=\"100\"/></a>"
+
+                        elif int(data[8]) == 10:  # media_wa_type 10, Video/Audio call lost
+                            if report_var == 'EN':
+                                report_msj += "&#128222; Missed" + str(data[11]).capitalize() + " call"
+                            elif report_var == 'ES':
+                                report_msj += "&#128222; " + str(data[11]).capitalize() + " llamada perdida"
+                            else:
+                                message += Fore.GREEN + "Message: " + Fore.RESET + "Missed " + str(data[11]).capitalize() + " call\n"
+
+                        elif int(data[8]) == 11:  # media_wa_type 11, Waiting for message
+                            if report_var == 'EN':
+                                report_msj += "<p style=\"color:#FF0000\";>&#9842; Waiting for message. This may take time </p>"
+                            elif report_var == 'ES':
+                                report_msj += "<p style=\"color:#FF0000\";>&#9842; Esperando mensaje. Esto puede tomar tiempo</p>"
+                            else:
+                                message += Fore.GREEN + "Message: " + Fore.RESET + "Waiting for message. This may take time\n"
+
+                        elif int(data[8]) == 13:  # media_wa_type 13 Gif
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Gif doesn't exist
+                                thumb = "Not downloaded"
+                            else:
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
+
+                            if data[11]:  # media_caption
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb + " - " + html.escape(data[11])
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + Fore.GREEN + " - Caption: " + Fore.RESET + data[11] + "\n"
+                            else:
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += thumb
+                                else:
+                                    message += Fore.GREEN + "Name: " + Fore.RESET + thumb + "\n"
+
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                report_msj += " - Gif - " + size_file(data[9]) + " " + duration_file(data[12])
+                            else:
+                                message += Fore.GREEN + "Type: " + Fore.RESET + "Gif" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
+
+                            if thumb != "Not downloaded":
+                                thumb = local + thumb[2:]
+
+                            if os.path.isfile(thumb) is False:
+                                Path(local + "Media/WhatsApp Animated Gifs/Sent").mkdir(parents=True)
+                                if thumb == "Not downloaded":
+                                    if int(data[1]) == 1:
+                                        thumb = local + "Media/WhatsApp Animated Gifs/Sent/VID-" + str(data[2]) + "-NotDownloaded.mp4"
+                                    else:
+                                        thumb = local + "Media/WhatsApp Animated Gifs/VID-" + str(data[2]) + "-NotDownloaded.mp4"
+
+                                with open(thumb, 'wb') as profile_file:
+                                    if data[19]:  # raw_data exists
+                                        profile_file.write(data[19])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    elif data[22]:  # Gets the thumbnail of the message_thumbnails
+                                        profile_file.write(data[22])
+                                        if report_var == 'None':
+                                            message += "Thumbnail was saved on local path '" + thumb + "'\n"
+                                    else:
+                                        profile_file.write(b"")
+
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                number = thumb.rfind("Media/WhatsApp Animated Gifs/")
+                                thumb = thumb[number-1:].replace("\\", "/")
+                                report_msj += "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
+
+                        elif int(data[8]) == 14:  # media_wa_type 14  Vcard multiples
+                            concat = ""
+                            chain = str(data[19]).split('BEGIN:VCARD')
+                            for i in chain[1:]:
+                                concat += "BEGIN:VCARD"
+                                concat += i.split('END:VCARD')[0] + "END:VCARD"
+
+                            if report_var == 'EN':
+                                report_msj += html.escape(data[10]) + "<br>&#9742;  Contact vCard</br>" + html.escape(concat)
+                            elif report_var == 'ES':
+                                report_msj += html.escape(data[10]) + "<br>&#9742;  Contacto vCard</br>" + html.escape(concat)
+                            else:
+                                message += Fore.GREEN + "Name: " + Fore.RESET + data[10] + Fore.GREEN + " - Type:" + Fore.RESET + " Contact vCard" + concat + "\n"
+
+                        elif int(data[8]) == 15:  # media_wa_type 15, Deleted Object
+                            if int(data[16]) == 5:  # edit_version 5, deleted for me
+                                if report_var == 'EN':
+                                    report_msj += "Message deleted for Me"
+                                elif report_var == 'ES':
+                                    report_msj += "Mensaje eliminado para mí"
+                                else:
+                                    message += Fore.GREEN + "Message: " + Fore.RESET + "Message deleted for Me\n"
+
+                            elif int(data[16]) == 7:  # edit_version 7, deleted for all
+                                if report_var == 'EN':
+                                    report_msj += "Message deleted for all participants"
+                                elif report_var == 'ES':
+                                    report_msj += "Mensaje eliminado para todos los destinatarios"
+                                else:
+                                    message += Fore.GREEN + "Message: " + Fore.RESET + "Message deleted for all participants\n"
+
+                        elif int(data[8]) == 16:  # media_wa_type 16, Share location
+                            caption = ""
+                            if data[11]:
+                                caption = data[11]
+
+                            if report_var == 'EN':
+                                report_msj += "Real time location (" + str(data[13]) + "," + str(data[14]) + ") - " + html.escape(caption) + "\n"
+                                report_msj += " <br><a href=\"https://www.google.es/maps/search/(" + str(data[13]) + "," + str(data[14]) + ")\" target=\"_blank\"> <img src=\"http://maps.google.com/maps/api/staticmap?center=" + str(data[13]) + "," + str(data[14]) + "&zoom=16&size=300x150&markers=size:mid|color:red|label:A|" + str(data[13]) + "," + str(data[14]) + "&sensor=false\"/></a>"
+                            elif report_var == 'ES':
+                                report_msj += "Ubicación en tiempo real (" + str(data[13]) + "," + str(data[14]) + ") - " + html.escape(caption) + "\n"
+                                report_msj += "<br><iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={}%2C{}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>".format(str(data[13]), str(data[14]))
+                            else:
+                                message += Fore.GREEN + "Type: " + Fore.RESET + "Real time location " + Fore.GREEN + "- Caption: " + Fore.RESET + caption + Fore.GREEN + " - Lat: " + Fore.RESET + str(data[13]) + Fore.GREEN + " - Long: " + Fore.RESET + str(data[14]) + Fore.GREEN + " - Duration: " + Fore.RESET + duration_file(data[12]) + "\n"
+
+                        elif int(data[8]) == 20:  # media_wa_type 20 Sticker
+                            chain = data[17].split(b'\x77\x02')[0]
+                            i = chain.rfind(b"Media/")
+                            b = len(chain)
+                            if i == -1:  # Audio doesn't exist
+                                thumb = "Not downloaded"
+                            else:
+                                thumb = (b"./" + chain[i:b]).decode('UTF-8', 'ignore')
+
+                            if (report_var == 'EN') or (report_var == 'ES'):
+                                number = thumb.rfind("Media/WhatsApp Stickers/")
+                                thumb = thumb[number-1:].replace("\\", "/")
+                                report_msj += " Sticker - " + size_file(data[9]) + "<br> <a href=\"." + thumb + "\" target=\"_blank\"> <IMG SRC='." + thumb + "'width=\"100\" height=\"100\"/></a>"
+                            else:
+                                message += Fore.GREEN + "Type: " + Fore.RESET + "Sticker" + Fore.GREEN + " - Size: " + Fore.RESET + str(data[9]) + " bytes " + size_file(data[9]) + Fore.GREEN + "\n"
+
+                        if data[20]:
+                            if int(data[20]) == 1:
+                                if (report_var == 'EN') or (report_var == 'ES'):
+                                    report_msj += "<br> &#127775;"
+                                else:
+                                    message += Fore.YELLOW + "Starred message " + Fore.RESET + "\n"
+
+                        main_status, report_status = status(int(data[3]))
+
+                        if (report_var == 'EN') or (report_var == 'ES'):
+                            report_time = time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))
+                            if (report_name == "Me") or (report_name == "&#128227; Me") or (report_name == "Yo") or (report_name == "&#128227; Yo"):
+                                rep_med += """
+                <li>
+                    <div class="bubble2">
+                        <span class="personSay2">""" + report_msj + """</span><br>
+                        <span class="time2 round">""" + report_time + "&nbsp" + report_status + """</span><br>
+                    </div>
+                </li>"""
+                            elif (report_name == "System Message") or (report_name == "Mensaje de Sistema"):
+                                rep_med += """
+                <li>
+                    <div class="bubble-system">
+                        <span class="time-system round">""" + report_time + "&nbsp" + report_status + """</span><br>
+                        <span class="person-System">""" + report_msj + """</span><br>
+                    </div>
+                </li>"""
+                            else:
+                                rep_med += """
+                <li>
+                    <div class="bubble">
+                        <span class="personName">""" + report_name + """</span><br><br>
+                        <span class="personSay">""" + report_msj + """</span><br>
+                        <span class="time round">""" + report_time + "&nbsp" + report_status + """</span><br>
+                    </div>
+                </li>"""
+
+                        elif report_var == 'None':
+                            message += Fore.GREEN + "Timestamp: " + Fore.RESET + time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000)) + Fore.GREEN + " - Status: " + Fore.RESET + main_status + "\n"
+                            print(message)
+
+                    n_mes += 1
+
+                except Exception as e:
+                    print("\nError showing message details: {}, Message ID {}, Timestamp {}".format(e, str(data[23]), time.strftime('%d-%m-%Y %H:%M', time.localtime(data[5] / 1000))))
+                    n_mes += 1
+                    continue
 
         if report_var != "None":
             report(rep_med, report_html, local)

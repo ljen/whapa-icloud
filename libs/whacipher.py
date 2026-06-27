@@ -13,7 +13,7 @@ output = ""
 
 
 def banner():
-    """ Function Banner """
+    """Function Banner"""
 
     print(r"""
      __      __.__                  .__       .__                  
@@ -27,7 +27,7 @@ def banner():
 
 
 def help():
-    """ Function show help """
+    """Function show help"""
 
     print("""
     ** Author: Ivan Moreno a.k.a B16f00t
@@ -38,7 +38,7 @@ def help():
 
 
 def encrypt12(db_file, key_file, db_cript, output):
-    """ Function encrypt msgstore Database """
+    """Function encrypt msgstore Database"""
     try:
         with open(key_file, "rb") as fh:
             key_data = fh.read()
@@ -64,11 +64,11 @@ def encrypt12(db_file, key_file, db_cript, output):
 
 
 def decrypt14(db_file, key_file, path, offset):
-    """ Function decrypt Crypt14 Database """
+    """Function decrypt Crypt14 Database"""
     try:
         print("Trying offset {}".format(offset))
         if os.path.getsize(key_file) != 158:
-            quit('[e] The specified input key file is invalid.')
+            quit("[e] The specified input key file is invalid.")
 
         with open(key_file, "rb") as fh:
             key_data = fh.read()
@@ -77,7 +77,7 @@ def decrypt14(db_file, key_file, path, offset):
         with open(db_file, "rb") as fh:
             db_data = fh.read()
 
-        data = db_data[offset:]  #191
+        data = db_data[offset:]  # 191
         iv = db_data[67:83]
         aes = AES.new(key, mode=AES.MODE_GCM, nonce=iv)
         with open(path, "wb") as fh:
@@ -91,10 +91,10 @@ def decrypt14(db_file, key_file, path, offset):
 
 
 def decrypt12(db_file, key_file, path):
-    """ Function decrypt Crypt12 Database """
+    """Function decrypt Crypt12 Database"""
     try:
         if os.path.getsize(key_file) != 158:
-            quit('[e] The specified input key file is invalid.')
+            quit("[e] The specified input key file is invalid.")
 
         with open(key_file, "rb") as fh:
             key_data = fh.read()
@@ -116,12 +116,21 @@ def decrypt12(db_file, key_file, path):
 
 if __name__ == "__main__":
     banner()
-    parser = argparse.ArgumentParser(description="Choose a file or path to decrypt or encrypt")
+    parser = argparse.ArgumentParser(
+        description="Choose a file or path to decrypt or encrypt"
+    )
     mode_parser = parser.add_mutually_exclusive_group()
-    mode_parser.add_argument("-f", "--file", help="Database file to encrypt o decrypt", nargs='?')
-    mode_parser.add_argument("-p", "--path", help="Database path to decrypt", nargs='?')
+    mode_parser.add_argument(
+        "-f", "--file", help="Database file to encrypt o decrypt", nargs="?"
+    )
+    mode_parser.add_argument("-p", "--path", help="Database path to decrypt", nargs="?")
     parser.add_argument("-d", "--decrypt", help="Whatsapp Key path (Decrypt database)")
-    parser.add_argument("-e", "--encrypt", help="'Whatsapp Key path' + 'msgstore.db.crypt14' (Encrypt database)", nargs=2)
+    parser.add_argument(
+        "-e",
+        "--encrypt",
+        help="'Whatsapp Key path' + 'msgstore.db.crypt14' (Encrypt database)",
+        nargs=2,
+    )
     parser.add_argument("-o", "--output", help="Database output file or path")
     args = parser.parse_args()
 
@@ -135,7 +144,13 @@ if __name__ == "__main__":
                     print("[i] Starting to encrypt in Crypt12...")
                     encrypt12(args.file, args.encrypt[0], args.encrypt[1], args.output)
                 else:
-                    print("[e] '" + args.encrypt[0] + "' or '" + args.encrypt[1] + "' doesn't exist")
+                    print(
+                        "[e] '"
+                        + args.encrypt[0]
+                        + "' or '"
+                        + args.encrypt[1]
+                        + "' doesn't exist"
+                    )
             else:
                 print("[e] " + args.file + " doesn't exist")
 
@@ -165,12 +180,14 @@ if __name__ == "__main__":
                         if ".crypt14" == os.path.splitext(crypt_file)[1]:
                             output = args.output + os.path.splitext(crypt_file)[0]
                             for offset in range(185, 195):
-                                if decrypt14(dir + crypt_file, args.decrypt, output, offset):
+                                if decrypt14(
+                                    dir + crypt_file, args.decrypt, output, offset
+                                ):
                                     break
 
                         elif ".crypt12" == os.path.splitext(crypt_file)[1]:
-                                output = args.output + os.path.splitext(crypt_file)[0]
-                                decrypt12(dir + crypt_file, args.decrypt, output)
+                            output = args.output + os.path.splitext(crypt_file)[0]
+                            decrypt12(dir + crypt_file, args.decrypt, output)
                     print("[i] Decryption completed")
 
                 else:

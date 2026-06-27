@@ -3,9 +3,10 @@ import os
 import sys
 
 # Add the parent directory to the path so we can import libs
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+
 
 class TestHkdfV1(unittest.TestCase):
     def test_hkdf_v1_known_output(self):
@@ -13,7 +14,9 @@ class TestHkdfV1(unittest.TestCase):
         ikm = b"ikm_test_data"
         info = b"info_test_data"
         length = 32
-        expected_hex = "f15c20c921c12f95f00759afa87f6fa411a2221d19a347b1978b2daebe5f22bd"
+        expected_hex = (
+            "f15c20c921c12f95f00759afa87f6fa411a2221d19a347b1978b2daebe5f22bd"
+        )
         out = hkdf_v1(ikm, info, length)
         self.assertEqual(out.hex(), expected_hex)
 
@@ -35,6 +38,7 @@ class TestHkdfV1(unittest.TestCase):
         for length in [1, 16, 32, 48, 64]:
             out = hkdf_v1(ikm, info, length)
             self.assertEqual(len(out), length)
+
 
 class TestPkcs7Strip(unittest.TestCase):
     def test_valid_padding(self):
@@ -76,8 +80,8 @@ class TestPkcs7Strip(unittest.TestCase):
         with self.assertRaises(IndexError):
             _pkcs7_strip(b"")
 
-class TestSafeJoin(unittest.TestCase):
 
+class TestSafeJoin(unittest.TestCase):
     def setUp(self):
         # We don't actually need the directory to exist for os.path.join and os.path.realpath
         # to test the logic of _safe_join, as long as realpath expands normally on standard systems.
@@ -115,5 +119,6 @@ class TestSafeJoin(unittest.TestCase):
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 """A python client library for Google Play Services OAuth."""
 
 from collections.abc import MutableMapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from importlib.metadata import version
 import ssl
 from typing import Iterable
@@ -83,6 +83,7 @@ class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
 @dataclass
 class DeviceConfig:
     """Encapsulates common device configuration parameters for OAuth requests."""
+
     android_id: str
     service: str = "ac2dm"
     device_country: str = "us"
@@ -100,7 +101,10 @@ def _perform_auth_request(
     session.mount(AUTH_URL, AuthHTTPAdapter())
     if proxies:
         session.proxies = proxies
-    session.headers={"User-Agent": USER_AGENT, 'Content-type': 'application/x-www-form-urlencoded'}
+    session.headers = {
+        "User-Agent": USER_AGENT,
+        "Content-type": "application/x-www-form-urlencoded",
+    }
 
     res = session.post(AUTH_URL, data=data, verify=True)
 
@@ -149,7 +153,7 @@ def perform_master_login(
         "sdk_version": device_config.sdk_version,
         "client_sig": device_config.client_sig,
         "callerSig": device_config.client_sig,
-        "droidguard_results": "dummy123"
+        "droidguard_results": "dummy123",
     }
 
     return _perform_auth_request(data, device_config.proxy)
@@ -285,7 +289,7 @@ def perform_oauth(
         "operatorCountry": device_config.operator_country,
         "lang": device_config.lang,
         "sdk_version": device_config.sdk_version,
-        "google_play_services_version": 240913000
+        "google_play_services_version": 240913000,
     }
 
     return _perform_auth_request(data, device_config.proxy)

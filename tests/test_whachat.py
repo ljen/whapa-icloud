@@ -1,6 +1,11 @@
-import pytest
 import unittest
-from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS, getDataPointAndroid
+from libs.whachat import (
+    startsWithDateTimeAndroid,
+    startsWithDateTimeiOS,
+    getDataPointiOS,
+    getDataPointAndroid,
+)
+
 
 def test_startsWithDateTimeAndroid_valid():
     assert startsWithDateTimeAndroid("24/5/18 14:25 - Sergio F: No se tío")
@@ -9,11 +14,13 @@ def test_startsWithDateTimeAndroid_valid():
     assert startsWithDateTimeAndroid("1/1/20 1:2:3 - Msg")
     assert startsWithDateTimeAndroid("24/5/18 14:25 -")
 
+
 def test_startsWithDateTimeAndroid_invalid():
     assert not startsWithDateTimeAndroid("Not a date - Hello")
     assert not startsWithDateTimeAndroid("24/5/18 14:25")
     assert not startsWithDateTimeAndroid("")
     assert not startsWithDateTimeAndroid("Sergio F: No se tío")
+
 
 class TestWhachat(unittest.TestCase):
     def test_startsWithDateTimeiOS_valid(self):
@@ -49,6 +56,7 @@ class TestWhachat(unittest.TestCase):
         # Multiple brackets
         self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] [Jordi]: Hello"))
 
+
 class TestGetDataPointiOS(unittest.TestCase):
     def test_english_format(self):
         line = "[25/8/20, 10:02:14] Jordi Subinspector Tecnologicos: Por qué no vieron los maniquiey"
@@ -72,7 +80,10 @@ class TestGetDataPointiOS(unittest.TestCase):
         self.assertEqual(date, "25/8/20")
         self.assertEqual(time, "10:02:14")
         self.assertIsNone(author)
-        self.assertEqual(message, "Messages to this group are now secured with end-to-end encryption.")
+        self.assertEqual(
+            message,
+            "Messages to this group are now secured with end-to-end encryption.",
+        )
 
     def test_phone_number_author(self):
         line = "[25/8/20, 10:02:14] +34 666 555 444: Hello"
@@ -81,6 +92,7 @@ class TestGetDataPointiOS(unittest.TestCase):
         self.assertEqual(time, "10:02:14")
         self.assertEqual(author, "+34 666 555 444")
         self.assertEqual(message, "Hello")
+
 
 class TestGetDataPointAndroid(unittest.TestCase):
     def test_english_format(self):
@@ -105,7 +117,10 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(date, "25/8/20")
         self.assertEqual(time, "10:02")
         self.assertIsNone(author)
-        self.assertEqual(message, "Messages to this group are now secured with end-to-end encryption.")
+        self.assertEqual(
+            message,
+            "Messages to this group are now secured with end-to-end encryption.",
+        )
 
     def test_phone_number_author(self):
         line = "25/8/20 10:02 - +34 666 555 444: Hello"
@@ -115,5 +130,6 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(author, "+34 666 555 444")
         self.assertEqual(message, "Hello")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,4 @@
-﻿import requests
+import requests
 import re
 import webbrowser
 import sys
@@ -7,7 +7,7 @@ import sys
 def start(version):
     """Check if there is a new version"""
     request = requests.get("https://github.com/B16f00t/whapa")
-    pattern = r'WhatsApp Parser Toolset v(\d.\d*)'
+    pattern = r"WhatsApp Parser Toolset v(\d.\d*)"
     matches = re.findall(pattern, request.text)
     for match in matches:
         if match:

@@ -7,9 +7,17 @@ import shutil
 from unittest.mock import patch
 
 # Add the parent directory to the path so we can import libs
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whamerge import merge, merge_win, messages_columns, chatlist_columns, quote_columns, thumbnail_columns
+from libs.whamerge import (
+    merge,
+    merge_win,
+    messages_columns,
+    chatlist_columns,
+    quote_columns,
+    thumbnail_columns,
+)
+
 
 class TestWhamerge(unittest.TestCase):
     def setUp(self):
@@ -31,29 +39,45 @@ class TestWhamerge(unittest.TestCase):
             cursor.execute(f"CREATE TABLE messages ({','.join(messages_columns)});")
             cursor.execute(f"CREATE TABLE chat ({','.join(chatlist_columns)});")
             cursor.execute(f"CREATE TABLE messages_quotes ({','.join(quote_columns)});")
-            cursor.execute(f"CREATE TABLE message_thumbnails ({','.join(thumbnail_columns)}, rowid INTEGER PRIMARY KEY);")
+            cursor.execute(
+                f"CREATE TABLE message_thumbnails ({','.join(thumbnail_columns)}, rowid INTEGER PRIMARY KEY);"
+            )
 
             # Insert dummy data
             for msg_id in msg_ids:
                 vals = [msg_id] + [str(msg_id)] * (len(messages_columns) - 1)
-                cursor.execute(f"INSERT INTO messages VALUES ({','.join(['?'] * len(messages_columns))})", vals)
+                cursor.execute(
+                    f"INSERT INTO messages VALUES ({','.join(['?'] * len(messages_columns))})",
+                    vals,
+                )
 
             for chat_id in chat_ids:
                 vals = [chat_id] + [str(chat_id)] * (len(chatlist_columns) - 1)
-                cursor.execute(f"INSERT INTO chat VALUES ({','.join(['?'] * len(chatlist_columns))})", vals)
+                cursor.execute(
+                    f"INSERT INTO chat VALUES ({','.join(['?'] * len(chatlist_columns))})",
+                    vals,
+                )
 
             for quote_id in quote_ids:
                 vals = [quote_id] + [str(quote_id)] * (len(quote_columns) - 1)
-                cursor.execute(f"INSERT INTO messages_quotes VALUES ({','.join(['?'] * len(quote_columns))})", vals)
+                cursor.execute(
+                    f"INSERT INTO messages_quotes VALUES ({','.join(['?'] * len(quote_columns))})",
+                    vals,
+                )
 
             for thumb_id in thumb_ids:
                 # Store thumb_id in the first column ('thumbnail') as string to track it
-                vals = [str(thumb_id)] + [''] * (len(thumbnail_columns) - 1) + [thumb_id]
-                cursor.execute(f"INSERT INTO message_thumbnails VALUES ({','.join(['?'] * (len(thumbnail_columns) + 1))})", vals)
+                vals = (
+                    [str(thumb_id)] + [""] * (len(thumbnail_columns) - 1) + [thumb_id]
+                )
+                cursor.execute(
+                    f"INSERT INTO message_thumbnails VALUES ({','.join(['?'] * (len(thumbnail_columns) + 1))})",
+                    vals,
+                )
 
             conn.commit()
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_merge_success(self, mock_print):
         # merge appends an output file if > 2 databases exist in path
         db_path = self.test_dir + os.sep
@@ -80,7 +104,7 @@ class TestWhamerge(unittest.TestCase):
             thumb_ids = sorted([int(row[0]) for row in cursor.fetchall()])
             self.assertEqual(thumb_ids, [1000, 2000, 3000])
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_merge_win_success(self, mock_print):
         db_path = self.test_dir + os.sep
 
@@ -94,7 +118,7 @@ class TestWhamerge(unittest.TestCase):
             msg_ids = sorted([row[0] for row in cursor.fetchall()])
             self.assertEqual(msg_ids, [1, 2, 3])
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_merge_no_dbs(self, mock_print):
         # Create an empty directory
         empty_dir = tempfile.mkdtemp()
@@ -104,16 +128,19 @@ class TestWhamerge(unittest.TestCase):
         finally:
             shutil.rmtree(empty_dir)
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_merge_one_db(self, mock_print):
         # Directory with only one db
         one_db_dir = tempfile.mkdtemp()
         try:
-            self.create_test_db(os.path.join(one_db_dir, "single.db"), [1], [1], [1], [1])
+            self.create_test_db(
+                os.path.join(one_db_dir, "single.db"), [1], [1], [1], [1]
+            )
             with self.assertRaises(SystemExit):
                 merge(one_db_dir + os.sep, os.path.join(one_db_dir, "output.db"))
         finally:
             shutil.rmtree(one_db_dir)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

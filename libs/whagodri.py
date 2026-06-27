@@ -44,16 +44,22 @@ class WaBackup:
     def _get_master_token(self, gmail, password, android_id, oauth_token):
         if oauth_token:
             print("Exchanging web oauth_token to master token...")
-            token = gpsoauth.exchange_token(gmail, oauth_token, gpsoauth.DeviceConfig(android_id=android_id))
+            token = gpsoauth.exchange_token(
+                gmail, oauth_token, gpsoauth.DeviceConfig(android_id=android_id)
+            )
             if "Token" in token:
                 print("Granted.")
-                return token['Token']
+                return token["Token"]
             else:
                 error(token)
                 quit()
         else:
             print("Requesting access to Google...")
-            token = gpsoauth.perform_master_login(email=gmail, password=password, device_config=gpsoauth.DeviceConfig(android_id=android_id))
+            token = gpsoauth.perform_master_login(
+                email=gmail,
+                password=password,
+                device_config=gpsoauth.DeviceConfig(android_id=android_id),
+            )
             if token.get("Error") == "NeedsBrowser":
                 oauth_token = self._handle_browser_login(gmail, android_id, token)
             else:
@@ -62,7 +68,7 @@ class WaBackup:
                     quit()
                 else:
                     print("Granted.")
-                    oauth_token = token['Token']
+                    oauth_token = token["Token"]
 
             # This password auth logic is wrong and needs fixing
             # But for now let's just do it like it was previously
@@ -73,39 +79,58 @@ class WaBackup:
         print("\n")
         for remaining in range(15, -1, -1):
             sys.stdout.write("\r")
-            sys.stdout.write("{:2d} seconds remaining to try to gain access through a web browser. Press Ctrl+C to cancel".format(remaining))
+            sys.stdout.write(
+                "{:2d} seconds remaining to try to gain access through a web browser. Press Ctrl+C to cancel".format(
+                    remaining
+                )
+            )
             sys.stdout.flush()
             time.sleep(1)
 
         url = token.get("Url")
         options = Options()
         options.add_argument("--window-size=720,720")
-        #os.environ['GH_TOKEN'] = ""
+        # os.environ['GH_TOKEN'] = ""
         try:
             if operating_system() == "Windows":
-                driver = webdriver.Chrome(service=Service("chromedriver.exe"), options=options)
-            elif operating_system() == "MacOs M1":
-                driver = webdriver.Chrome(service=Service("chromedriverM1"), options=options)
-            elif operating_system() == "MacOs":
-                driver = webdriver.Chrome(service=Service("chromedriverMac"), options=options)
-            else:
-                driver = webdriver.Chrome(service=Service("chromedriver"), options=options)
-        except:
-            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-
-        stealth(driver,
-                languages=["en-US", "en"],
-                vendor="Google Inc.",
-                platform="Win32",
-                webgl_vendor="Intel Inc.",
-                renderer="Intel Iris OpenGL Engine",
-                fix_hairline=True,
+                driver = webdriver.Chrome(
+                    service=Service("chromedriver.exe"), options=options
                 )
+            elif operating_system() == "MacOs M1":
+                driver = webdriver.Chrome(
+                    service=Service("chromedriverM1"), options=options
+                )
+            elif operating_system() == "MacOs":
+                driver = webdriver.Chrome(
+                    service=Service("chromedriverMac"), options=options
+                )
+            else:
+                driver = webdriver.Chrome(
+                    service=Service("chromedriver"), options=options
+                )
+        except Exception:
+            driver = webdriver.Chrome(
+                service=Service(ChromeDriverManager().install()), options=options
+            )
+
+        stealth(
+            driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+        )
 
         driver.get(url)
         for remaining in range(30, -1, -1):
             sys.stdout.write("\r")
-            sys.stdout.write("{:2d} seconds remaining to login to your Google Account".format(remaining))
+            sys.stdout.write(
+                "{:2d} seconds remaining to login to your Google Account".format(
+                    remaining
+                )
+            )
             sys.stdout.flush()
             time.sleep(1)
 
@@ -113,7 +138,7 @@ class WaBackup:
         cookies = driver.get_cookies()
         oauth_token = None
         for cookie in cookies:
-            if cookie.get("name") == 'oauth_token':
+            if cookie.get("name") == "oauth_token":
                 oauth_token = cookie.get("value")
                 print("A valid token has been obtained.")
                 break
@@ -124,18 +149,24 @@ class WaBackup:
             exit()
 
         print("Requesting access to Google by OAuth cookie...")
-        login_token = gpsoauth.perform_master_login_oauth(email=gmail, oauth_token=oauth_token, device_config=gpsoauth.DeviceConfig(android_id=android_id, sdk_version=28))
+        login_token = gpsoauth.perform_master_login_oauth(
+            email=gmail,
+            oauth_token=oauth_token,
+            device_config=gpsoauth.DeviceConfig(android_id=android_id, sdk_version=28),
+        )
         if "Token" not in login_token:
             error(login_token)
             quit()
         else:
             print("Granted.")
             print("Writing Token in your settings.cfg file...")
-            cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+            cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace(
+                "/", os.path.sep
+            )
             config = ConfigObj(cfg_file, interpolation=None)
-            config['google-auth']['oauth'] = login_token['Token']
+            config["google-auth"]["oauth"] = login_token["Token"]
             config.write()
-            return login_token['Token']
+            return login_token["Token"]
 
     def _authenticate_drive(self, gmail, master_token, android_id, celnumbr):
         print("Requesting authentication for Google Drive...")
@@ -144,7 +175,10 @@ class WaBackup:
             master_token,
             "oauth2:https://www.googleapis.com/auth/drive.appdata",
             "com.whatsapp",
-            gpsoauth.DeviceConfig(android_id=android_id, client_sig="38a0f7d505fe18fec64fbf343ecaaaf310dbd799"),
+            gpsoauth.DeviceConfig(
+                android_id=android_id,
+                client_sig="38a0f7d505fe18fec64fbf343ecaaaf310dbd799",
+            ),
         )
         if "Auth" not in auth:
             error(auth)
@@ -166,7 +200,10 @@ class WaBackup:
         return response
 
     def get_page(self, path, page_token=None):
-        return self.get(path, None if page_token is None else {"pageToken": page_token}, ).json()
+        return self.get(
+            path,
+            None if page_token is None else {"pageToken": page_token},
+        ).json()
 
     def list_path(self, path):
         last_component = path.split("/")[-1]
@@ -187,7 +224,7 @@ class WaBackup:
 
 
 def banner():
-    """ Function Banner """
+    """Function Banner"""
     print(r"""
      __      __.__             ________      ________        .__ 
     /  \    /  \  |__ _____   /  _____/  ____\______ \_______|__|
@@ -200,7 +237,7 @@ def banner():
 
 
 def help():
-    """ Function show help """
+    """Function show help"""
 
     print("""\n    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
@@ -210,11 +247,12 @@ def help():
 
 
 def createSettingsFile():
-    """ Function that creates the settings file """
+    """Function that creates the settings file"""
 
-    cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
-    with open(cfg_file, 'w') as cfg:
-        cfg.write(dedent("""
+    cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace("/", os.path.sep)
+    with open(cfg_file, "w") as cfg:
+        cfg.write(
+            dedent("""
             [report]
             company = ""
             record = ""
@@ -237,23 +275,24 @@ def createSettingsFile():
             [icloud-auth] 
             icloud  = alias@icloud.com
             passw = yourpassword
-            """).lstrip())
+            """).lstrip()
+        )
 
 
 def getConfigs():
-    cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+    cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace("/", os.path.sep)
     config = ConfigObj(cfg_file, interpolation=None)
     try:
-        gmail = config['google-auth']['gmail']
-        password = config['google-auth']['password']
-        celnumbr = config['google-auth']['celnumbr'].lstrip('+0')
-        oauth_token = config['google-auth']['oauth']
-        android_id = config['google-auth']['android_id']
+        gmail = config["google-auth"]["gmail"]
+        password = config["google-auth"]["password"]
+        celnumbr = config["google-auth"]["celnumbr"].lstrip("+0")
+        oauth_token = config["google-auth"]["oauth"]
+        android_id = config["google-auth"]["android_id"]
         if not password:
             try:
                 password = getpass("Enter your password for {}: ".format(gmail))
             except KeyboardInterrupt:
-                quit('\nCancelled!')
+                quit("\nCancelled!")
 
         return {
             "gmail": gmail,
@@ -284,30 +323,68 @@ def backup_info(backup):
         print("[-] Whatsapp version: {}".format(metadata.get("versionOfAppWhenBackup")))
         print("[-] Backup protected: {}".format(metadata.get("encryptedBackupEnabled")))
         print("[-] Backup upload   : {}".format(backup["updateTime"]))
-        print("[-] Backup size     : {} Bytes {}".format(backup["sizeBytes"], human_size(int(backup["sizeBytes"]))))
+        print(
+            "[-] Backup size     : {} Bytes {}".format(
+                backup["sizeBytes"], human_size(int(backup["sizeBytes"]))
+            )
+        )
         print("[+] Backup metadata")
-        print("    [-] Backup Version           : {} ".format(metadata.get("backupVersion")))
-        print("    [-] Chat DB Size             : {} Bytes {}".format(metadata.get("chatdbSize"),
-                                                                      human_size(int(
-                                                                          metadata.get("chatdbSize")))))
+        print(
+            "    [-] Backup Version           : {} ".format(
+                metadata.get("backupVersion")
+            )
+        )
+        print(
+            "    [-] Chat DB Size             : {} Bytes {}".format(
+                metadata.get("chatdbSize"), human_size(int(metadata.get("chatdbSize")))
+            )
+        )
         if metadata.get("encryptedBackupEnabled"):
             return
-        print("    [-] Backup Frequency         : {} ".format(metadata.get("backupFrequency")))
-        print("    [-] Backup Network Settings  : {} ".format(metadata.get("backupNetworkSettings")))
+        print(
+            "    [-] Backup Frequency         : {} ".format(
+                metadata.get("backupFrequency")
+            )
+        )
+        print(
+            "    [-] Backup Network Settings  : {} ".format(
+                metadata.get("backupNetworkSettings")
+            )
+        )
 
-        print("    [-] Include Videos In Backup : {} ".format(metadata.get("includeVideosInBackup")))
-        print("    [-] Num Of Photos            : {}".format(metadata.get("numOfPhotos")))
-        print("    [-] Num Of Media Files       : {}".format(metadata.get("numOfMediaFiles")))
-        print("    [-] Num Of Messages          : {}".format(metadata.get("numOfMessages")))
-        print("    [-] Video Size               : {} Bytes {}".format(metadata.get("videoSize"),
-                                                                      human_size(int(
-                                                                          metadata.get("videoSize")))))
-        print("    [-] Backup Size              : {} Bytes {}".format(metadata.get("backupSize"),
-                                                                      human_size(int(
-                                                                          metadata.get("backupSize")))))
-        print("    [-] Media Size               : {} Bytes {}".format(metadata.get("mediaSize"),
-                                                                      human_size(int(
-                                                                          metadata.get("mediaSize")))))
+        print(
+            "    [-] Include Videos In Backup : {} ".format(
+                metadata.get("includeVideosInBackup")
+            )
+        )
+        print(
+            "    [-] Num Of Photos            : {}".format(metadata.get("numOfPhotos"))
+        )
+        print(
+            "    [-] Num Of Media Files       : {}".format(
+                metadata.get("numOfMediaFiles")
+            )
+        )
+        print(
+            "    [-] Num Of Messages          : {}".format(
+                metadata.get("numOfMessages")
+            )
+        )
+        print(
+            "    [-] Video Size               : {} Bytes {}".format(
+                metadata.get("videoSize"), human_size(int(metadata.get("videoSize")))
+            )
+        )
+        print(
+            "    [-] Backup Size              : {} Bytes {}".format(
+                metadata.get("backupSize"), human_size(int(metadata.get("backupSize")))
+            )
+        )
+        print(
+            "    [-] Media Size               : {} Bytes {}".format(
+                metadata.get("mediaSize"), human_size(int(metadata.get("mediaSize")))
+            )
+        )
 
     except Exception as e:
         print(e)
@@ -323,27 +400,34 @@ def error(token):
             "1. Check that your email and password are correct in the settings file.\n"
             "2. Your are using a old python version. Works >= 3.8.\n"
             "3. Update requirements, use in a terminal: 'pip3 install --upgrade -r ./doc/requirements.txt' or 'pip install --upgrade -r ./doc/requirements.txt\n"
-            "4. Your OAuth token configured in the settings file may have expired. The token will be deleted and you will have to log in again.")
+            "4. Your OAuth token configured in the settings file may have expired. The token will be deleted and you will have to log in again."
+        )
 
-        cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+        cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace("/", os.path.sep)
         config = ConfigObj(cfg_file, interpolation=None)
-        config['google-auth']['oauth'] = ""
+        config["google-auth"]["oauth"] = ""
         config.write()
 
     elif "NeedsBrowser" in failed:
         print("\n   Workaround\n-----------------")
         print(
-            "1. Maybe you need unlock captcha in your account, If you request it, log in to your browser and then click here, https://accounts.google.com/b/0/DisplayUnlockCaptcha")
+            "1. Maybe you need unlock captcha in your account, If you request it, log in to your browser and then click here, https://accounts.google.com/b/0/DisplayUnlockCaptcha"
+        )
         print(
-            "2. Or you have double factor authentication enabled, so disable it in this URL: https://myaccount.google.com/security")
-        print("3. If you want to use 2FA, you will have to go to the URL: https://myaccount.google.com/apppasswords\n"
-              "   Then select Application: Other. Write down: Whapa, and a password will be display, then you must write the password in your settings.cfg.")
+            "2. Or you have double factor authentication enabled, so disable it in this URL: https://myaccount.google.com/security"
+        )
+        print(
+            "3. If you want to use 2FA, you will have to go to the URL: https://myaccount.google.com/apppasswords\n"
+            "   Then select Application: Other. Write down: Whapa, and a password will be display, then you must write the password in your settings.cfg."
+        )
 
     elif "DeviceManagementRequiredOrSyncDisabled" in failed:
         print("\n   Workaround\n-----------------")
         print(
             "1. You are using a GSuite account.  The reason for this is, that for this google-apps account, the enforcement of policies on mobile clients is enabled in admin console (enforce_android_policy).\n"
-            "   If you disable this in admin-console, the authentication works.")
+            "   If you disable this in admin-console, the authentication works."
+        )
+
 
 def get_file(passed_file: str, is_dry_run: bool):
     global total_size, num_files
@@ -353,20 +437,19 @@ def get_file(passed_file: str, is_dry_run: bool):
 
     file_short = os.path.sep.join(passed_file.split("/")[3:])
     if is_dry_run:
-
         print("    [-] Skipped (Dry Run): {}".format(passed_file))
 
     else:
         if file_short.endswith("mcrypt1"):
             response: Response = requests.get(
                 "https://backup.googleapis.com/v1/{}".format(passed_file),
-                headers={"Authorization": "Bearer {}".format(Auth["Auth"])}
+                headers={"Authorization": "Bearer {}".format(Auth["Auth"])},
             )
             if response.status_code == 200:
                 encrypted_metadata = json.loads(response.content)["metadata"]
                 os.makedirs(os.path.dirname(passed_file), exist_ok=True)
                 destination: io.BufferedWriter
-                with open(passed_file + "-metadata", 'w') as destination:
+                with open(passed_file + "-metadata", "w") as destination:
                     destination.write(encrypted_metadata)
 
             else:
@@ -375,7 +458,7 @@ def get_file(passed_file: str, is_dry_run: bool):
         response = requests.get(
             "https://backup.googleapis.com/v1/{}?alt=media".format(passed_file),
             headers={"Authorization": "Bearer {}".format(Auth["Auth"])},
-            stream=True
+            stream=True,
         )
         if response.status_code == 200:
             passed_file = output_folder + file_short
@@ -410,8 +493,15 @@ def get_multiple_files_with_out_threads(files_dict: dict, is_dry_run: bool):
     for file_url, file_size in files_dict.items():
         file_name = os.path.sep.join(file_url.split("/")[3:])
         local_file_path = (output_folder + "/" + file_name).replace("/", os.path.sep)
-        if os.path.isfile(local_file_path) and os.path.getsize(local_file_path) == file_size:
-            print("    [-] Number: {}/{} - {} : Already Exists".format(file_index, total_files, local_file_path))
+        if (
+            os.path.isfile(local_file_path)
+            and os.path.getsize(local_file_path) == file_size
+        ):
+            print(
+                "    [-] Number: {}/{} - {} : Already Exists".format(
+                    file_index, total_files, local_file_path
+                )
+            )
 
         else:
             if is_dry_run:
@@ -421,49 +511,61 @@ def get_multiple_files_with_out_threads(files_dict: dict, is_dry_run: bool):
                 if file_name.endswith("mcrypt1"):
                     response: Response = requests.get(
                         "https://backup.googleapis.com/v1/{}".format(file_url),
-                        headers={"Authorization": "Bearer {}".format(Auth["Auth"])}
+                        headers={"Authorization": "Bearer {}".format(Auth["Auth"])},
                     )
                     if response.status_code == 200:
                         encrypted_metadata = json.loads(response.content)["metadata"]
                         os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                         destination: io.BufferedWriter
-                        with open(local_file_path + "-metadata", 'w') as destination:
+                        with open(local_file_path + "-metadata", "w") as destination:
                             destination.write(encrypted_metadata)
-                        print("    [-] Number: {}/{} - {} : Download Metadata Success".format(file_index, total_files,
-                                                                                     local_file_path))
+                        print(
+                            "    [-] Number: {}/{} - {} : Download Metadata Success".format(
+                                file_index, total_files, local_file_path
+                            )
+                        )
 
                     else:
                         print(
-                            "    [-] Number: {}/{} - {} : Download  Metadata Failure, Error - {} : {}".format(file_index,
-                                                                                                    total_files,
-                                                                                                    local_file_path,
-                                                                                                    response.status_code,
-                                                                                                    response.reason))
+                            "    [-] Number: {}/{} - {} : Download  Metadata Failure, Error - {} : {}".format(
+                                file_index,
+                                total_files,
+                                local_file_path,
+                                response.status_code,
+                                response.reason,
+                            )
+                        )
 
                 response: Response = requests.get(
                     "https://backup.googleapis.com/v1/{}?alt=media".format(file_url),
                     headers={"Authorization": "Bearer {}".format(Auth["Auth"])},
-                    stream=True
+                    stream=True,
                 )
                 if response.status_code == 200:
-
                     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                     destination: io.BufferedWriter
                     with open(local_file_path, "bw") as destination:
                         chunk: bytes
                         for chunk in response.iter_content(chunk_size=None):
                             destination.write(chunk)
-                    print("    [-] Number: {}/{} - {} : Download Success".format(file_index, total_files,
-                                                                                 local_file_path))
+                    print(
+                        "    [-] Number: {}/{} - {} : Download Success".format(
+                            file_index, total_files, local_file_path
+                        )
+                    )
                     total_size += file_size
                     num_files += 1
 
                 else:
                     print(
-                        "    [-] Number: {}/{} - {} : Download Failure, Error - {} : {}".format(file_index, total_files,
-                                                                                                local_file_path,
-                                                                                                response.status_code,
-                                                                                                response.reason))
+                        "    [-] Number: {}/{} - {} : Download Failure, Error - {} : {}".format(
+                            file_index,
+                            total_files,
+                            local_file_path,
+                            response.status_code,
+                            response.reason,
+                        )
+                    )
 
         file_index += 1
 
@@ -471,7 +573,7 @@ def get_multiple_files_with_out_threads(files_dict: dict, is_dry_run: bool):
 def get_multiple_files(drives, files_dict: dict, thread_count: int, is_dry_run: bool):
     print("Thread-Main started")
     try:
-        threadList = [ "Thread-{:02d}".format(i+1) for i in range(thread_count) ]
+        threadList = ["Thread-{:02d}".format(i + 1) for i in range(thread_count)]
         threads = []
         threadID = 1
         print("[i] Generating threads...")
@@ -484,7 +586,7 @@ def get_multiple_files(drives, files_dict: dict, thread_count: int, is_dry_run: 
 
         n = 1
         lenfiles = len(files_dict)
-        
+
         output_folder = args.output
         if not output_folder:
             output_folder = os.getcwd()
@@ -492,11 +594,19 @@ def get_multiple_files(drives, files_dict: dict, thread_count: int, is_dry_run: 
         for entry, size in files_dict.items():
             file_name = os.path.sep.join(entry.split("/")[3:])
             local_store = (output_folder + "/" + file_name).replace("/", os.path.sep)
-            workQueue.put({'url': entry, 'local': local_store, 'now': n, 'lenfiles': lenfiles, 'size': size})
+            workQueue.put(
+                {
+                    "url": entry,
+                    "local": local_store,
+                    "now": n,
+                    "lenfiles": lenfiles,
+                    "size": size,
+                }
+            )
             n += 1
-        
+
         workQueue.shutdown()
-        
+
         for t in threads:
             t.join()
 
@@ -530,21 +640,24 @@ class MyThread(threading.Thread):
             print("{} finished".format(self.name))
 
 
-def process_data(thread_name: str, q: queue.Queue, session: requests.Session, is_dry_run: bool):
+def process_data(
+    thread_name: str, q: queue.Queue, session: requests.Session, is_dry_run: bool
+):
     while True:
         data = q.get()
         get_multiple_files_thread(data, thread_name, session, is_dry_run=is_dry_run)
 
 
-def get_multiple_files_thread(file_data: dict, thread_name: str, session: requests.Session,
-                              is_dry_run: bool):
+def get_multiple_files_thread(
+    file_data: dict, thread_name: str, session: requests.Session, is_dry_run: bool
+):
     global total_size, num_files
 
-    url = file_data['url']
-    local = file_data['local']
-    now = file_data['now']
-    len_files = file_data['lenfiles']
-    size = file_data['size']
+    url = file_data["url"]
+    local = file_data["local"]
+    now = file_data["now"]
+    len_files = file_data["lenfiles"]
+    size = file_data["size"]
 
     if is_dry_run:
         print("    [-] Skipped (Dry Run): {}".format(local))
@@ -559,20 +672,29 @@ def get_multiple_files_thread(file_data: dict, thread_name: str, session: reques
                 encrypted_metadata = json.loads(response.content)["metadata"]
                 os.makedirs(os.path.dirname(local), exist_ok=True)
                 destination: io.BufferedWriter
-                with open(local + "-metadata", 'w') as destination:
+                with open(local + "-metadata", "w") as destination:
                     destination.write(encrypted_metadata)
-                print("    [-] Number: {}/{} - {} => Metadata Downloaded: {}"
-                      .format(now, len_files, thread_name, local))
+                print(
+                    "    [-] Number: {}/{} - {} => Metadata Downloaded: {}".format(
+                        now, len_files, thread_name, local
+                    )
+                )
             else:
-                print("    [-] Number: {}/{} - {} => Metadata not Downloaded: {}"
-                      .format(now, len_files, thread_name, local))
+                print(
+                    "    [-] Number: {}/{} - {} => Metadata not Downloaded: {}".format(
+                        now, len_files, thread_name, local
+                    )
+                )
         else:
-            print("    [-] Number: {}/{} - {} => Metadata Skipped: {}".format(now, len_files, thread_name, local))
+            print(
+                "    [-] Number: {}/{} - {} => Metadata Skipped: {}".format(
+                    now, len_files, thread_name, local
+                )
+            )
 
     if not os.path.isfile(local) or os.path.getsize(local) != size:
         response: Response = session.get(
-            "https://backup.googleapis.com/v1/{}?alt=media".format(url),
-            stream=True
+            "https://backup.googleapis.com/v1/{}?alt=media".format(url), stream=True
         )
         if response.status_code == 200:
             os.makedirs(os.path.dirname(local), exist_ok=True)
@@ -581,23 +703,40 @@ def get_multiple_files_thread(file_data: dict, thread_name: str, session: reques
                 chunk: bytes
                 for chunk in response.iter_content(chunk_size=None):
                     destination.write(chunk)
-            print("    [-] Number: {}/{} - {} => Downloaded: {}".format(now, len_files, thread_name, local))
+            print(
+                "    [-] Number: {}/{} - {} => Downloaded: {}".format(
+                    now, len_files, thread_name, local
+                )
+            )
             total_size += size
             num_files += 1
 
         else:
-            print("    [-] Number: {}/{} - {} => Not downloaded: {}".format(now, len_files, thread_name, local))
+            print(
+                "    [-] Number: {}/{} - {} => Not downloaded: {}".format(
+                    now, len_files, thread_name, local
+                )
+            )
     else:
-        print("    [-] Number: {}/{} - {} => Skipped: {}".format(now, len_files, thread_name, local))
+        print(
+            "    [-] Number: {}/{} - {} => Skipped: {}".format(
+                now, len_files, thread_name, local
+            )
+        )
 
 
 def operating_system():
-    """ Get the name of the OS """
+    """Get the name of the OS"""
 
     if sys.platform == "win32" or sys.platform == "cygwin":
         return "Windows"
     elif sys.platform == "Darwin":
-        if subprocess.check_output(['sysctl', '-n', 'machdep.cpu.brand_string']).decode('utf-8') == "Apple M1\n":
+        if (
+            subprocess.check_output(
+                ["sysctl", "-n", "machdep.cpu.brand_string"]
+            ).decode("utf-8")
+            == "Apple M1\n"
+        ):
             return "MacOs M1"
         else:
             return "MacOs"
@@ -608,25 +747,58 @@ def operating_system():
 # Initializing
 if __name__ == "__main__":
     banner()
-    parser = argparse.ArgumentParser(description="Extract your Whatsapp files from Google Drive")
+    parser = argparse.ArgumentParser(
+        description="Extract your Whatsapp files from Google Drive"
+    )
     user_parser = parser.add_mutually_exclusive_group()
-    user_parser.add_argument("-i", "--info", help="Show information about Whatsapp backups", action="store_true")
-    user_parser.add_argument("-l", "--list", help="List all available files", action="store_true")
-    user_parser.add_argument("-lw", "--list_whatsapp", help="List Whatsapp backups", action="store_true")
+    user_parser.add_argument(
+        "-i",
+        "--info",
+        help="Show information about Whatsapp backups",
+        action="store_true",
+    )
+    user_parser.add_argument(
+        "-l", "--list", help="List all available files", action="store_true"
+    )
+    user_parser.add_argument(
+        "-lw", "--list_whatsapp", help="List Whatsapp backups", action="store_true"
+    )
     user_parser.add_argument("-p", "--pull", help="Pull a file from Google Drive")
-    user_parser.add_argument("-s", "--sync", help="Sync all files locally", action="store_true")
-    user_parser.add_argument("-si", "--s_images", help="Sync Images files locally", action="store_true")
-    user_parser.add_argument("-sv", "--s_videos", help="Sync Videos files locally", action="store_true")
-    user_parser.add_argument("-sa", "--s_audios", help="Sync Audios files locally", action="store_true")
-    user_parser.add_argument("-sx", "--s_documents", help="Sync Documents files locally", action="store_true")
-    user_parser.add_argument("-sd", "--s_databases", help="Sync Databases files locally", action="store_true")
+    user_parser.add_argument(
+        "-s", "--sync", help="Sync all files locally", action="store_true"
+    )
+    user_parser.add_argument(
+        "-si", "--s_images", help="Sync Images files locally", action="store_true"
+    )
+    user_parser.add_argument(
+        "-sv", "--s_videos", help="Sync Videos files locally", action="store_true"
+    )
+    user_parser.add_argument(
+        "-sa", "--s_audios", help="Sync Audios files locally", action="store_true"
+    )
+    user_parser.add_argument(
+        "-sx", "--s_documents", help="Sync Documents files locally", action="store_true"
+    )
+    user_parser.add_argument(
+        "-sd", "--s_databases", help="Sync Databases files locally", action="store_true"
+    )
     parser.add_argument("-o", "--output", help="Output path to save files", type=str)
-    parser.add_argument("-np", "--no_parallel", help="No parallel downloads", action="store_true")
-    parser.add_argument("-tc", "--thread_count", help="Number of threads if parallel download", type=int, default=12)
-    parser.add_argument("-dr", "--dry_run", help="Dry Run : No downloads", action="store_true")
+    parser.add_argument(
+        "-np", "--no_parallel", help="No parallel downloads", action="store_true"
+    )
+    parser.add_argument(
+        "-tc",
+        "--thread_count",
+        help="Number of threads if parallel download",
+        type=int,
+        default=12,
+    )
+    parser.add_argument(
+        "-dr", "--dry_run", help="Dry Run : No downloads", action="store_true"
+    )
     args = parser.parse_args()
 
-    cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+    cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace("/", os.path.sep)
     if not os.path.isfile(cfg_file):
         createSettingsFile()
 
@@ -662,9 +834,17 @@ if __name__ == "__main__":
                     for file in wa_backup.backup_files(backup):
                         num_files += 1
                         total_size += int(file["sizeBytes"])
-                        if os.path.sep.join(file["name"].split("/")[6:]) == "msgstore.db.crypt14":
+                        if (
+                            os.path.sep.join(file["name"].split("/")[6:])
+                            == "msgstore.db.crypt14"
+                        ):
                             print("    [-] {}".format(file["name"]))
-                            print("    [-] Size {} {}".format(file["sizeBytes"], human_size((int(file["sizeBytes"])))))
+                            print(
+                                "    [-] Size {} {}".format(
+                                    file["sizeBytes"],
+                                    human_size((int(file["sizeBytes"]))),
+                                )
+                            )
 
             elif args.sync:
                 for backup in backups:
@@ -678,16 +858,29 @@ if __name__ == "__main__":
                             filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
-                        print("\n[i] Backup {} omitted. Write a correct phone number in the setting file".format(
-                            number_backup))
+                        print(
+                            "\n[i] Backup {} omitted. Write a correct phone number in the setting file".format(
+                                number_backup
+                            )
+                        )
 
             elif args.s_images:
                 for backup in backups:
@@ -702,12 +895,22 @@ if __name__ == "__main__":
                                 filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
                         print("[i] Backup {} omitted".format(number_backup))
@@ -725,12 +928,22 @@ if __name__ == "__main__":
                                 filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
                         print("[i] Backup {} omitted".format(number_backup))
@@ -748,12 +961,22 @@ if __name__ == "__main__":
                                 filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
                         print("[i] Backup {} omitted".format(number_backup))
@@ -771,12 +994,22 @@ if __name__ == "__main__":
                                 filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
                         print("[i] Backup {} omitted".format(number_backup))
@@ -794,12 +1027,22 @@ if __name__ == "__main__":
                                 filter_file[file["name"]] = int(file["sizeBytes"])
 
                         if args.no_parallel:
-                            get_multiple_files_with_out_threads(filter_file, is_dry_run=args.dry_run)
+                            get_multiple_files_with_out_threads(
+                                filter_file, is_dry_run=args.dry_run
+                            )
                         else:
-                            get_multiple_files(backup, filter_file, thread_count=args.thread_count, is_dry_run=args.dry_run)
+                            get_multiple_files(
+                                backup,
+                                filter_file,
+                                thread_count=args.thread_count,
+                                is_dry_run=args.dry_run,
+                            )
 
-                        print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                         human_size(total_size)))
+                        print(
+                            "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                                num_files, total_size, human_size(total_size)
+                            )
+                        )
 
                     else:
                         print("[i] Backup {} omitted".format(number_backup))
@@ -807,17 +1050,27 @@ if __name__ == "__main__":
             elif args.pull:
                 file = args.pull
                 output = args.output
-                print("[+] Backup name: {}".format(os.path.sep.join(file.split("/")[:4])))
+                print(
+                    "[+] Backup name: {}".format(os.path.sep.join(file.split("/")[:4]))
+                )
                 get_file(file, is_dry_run=args.dry_run)
-                print("\n[i] {} files downloaded, total size {} Bytes {}".format(num_files, total_size,
-                                                                                 human_size(total_size)))
+                print(
+                    "\n[i] {} files downloaded, total size {} Bytes {}".format(
+                        num_files, total_size, human_size(total_size)
+                    )
+                )
         except Exception as e:
             if "401 Client Error" in str(e):
-                print("Unable to access the resource, your OAuth token configured in the settings file may have"
-                      " expired.\nRemoving token....\nTry again, you will have to log in again.""")
-                cfg_file = r'{}/cfg/settings.cfg'.format(whapa_path).replace("/", os.path.sep)
+                print(
+                    "Unable to access the resource, your OAuth token configured in the settings file may have"
+                    " expired.\nRemoving token....\nTry again, you will have to log in again."
+                    ""
+                )
+                cfg_file = r"{}/cfg/settings.cfg".format(whapa_path).replace(
+                    "/", os.path.sep
+                )
                 config = ConfigObj(cfg_file, interpolation=None)
-                config['google-auth']['oauth'] = ""
+                config["google-auth"]["oauth"] = ""
                 config.write()
 
             else:

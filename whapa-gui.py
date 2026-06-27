@@ -786,24 +786,18 @@ To export chats on an iOS phone, here are the steps:
 
         messagebox.showinfo("About", title + " v" + version + "\nAuthor: " + author + "\nContact: " + contact)
 
-    def system_slash(self, string):
-        """ Change slashes depending on the platform """
-        if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
-            return string.replace("/", "\\")
-        else:
-            return string.replace("\\", "/")
 
     def update(self):
         """ About dialog"""
 
         if system == "Linux":
             try:
-                exec = self.system_slash(r'python3 "{}/libs/update.py" {}'.format(whapa_path, version))
+                exec = system_slash(r'python3 "{}/libs/update.py" {}'.format(whapa_path, version))
             except:
-                exec = self.system_slash(r'python "{}/libs/update.py" {}'.format(whapa_path, version))
+                exec = system_slash(r'python "{}/libs/update.py" {}'.format(whapa_path, version))
 
         else:
-            exec = self.system_slash(r'python "{}/libs/update.py" {}'.format(whapa_path, version))
+            exec = system_slash(r'python "{}/libs/update.py" {}'.format(whapa_path, version))
 
         self.label_status.set(exec)
         os.system(exec)
@@ -917,9 +911,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -o "{}/"'.format(os.getcwd())
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -950,9 +944,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -o "{}/"'.format(os.getcwd())
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -975,9 +969,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -o "{}/"'.format(os.getcwd())
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -1009,9 +1003,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -o "{}/"'.format(os.getcwd())
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
             print(exec)
 
         self.label_status.set(exec)
@@ -1031,9 +1025,9 @@ To export chats on an iOS phone, here are the steps:
             pass
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whapa.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -1053,16 +1047,16 @@ To export chats on an iOS phone, here are the steps:
         msgstore_file = (self.whapa_file.get()).strip("\n")
         if system == "Linux":
             print("[i] Make sure the undark file has execute permissions")
-            exec_command = self.system_slash(r'"{}/libs/undark" -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
+            exec_command = system_slash(r'"{}/libs/undark" -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
             os.system(exec_command)
 
         else:
             log = open(log_file, 'w')
-            exec = self.system_slash(r'{}/libs/undark.exe'.format(whapa_path))
+            exec = system_slash(r'{}/libs/undark.exe'.format(whapa_path))
             c = subprocess.Popen([exec, "-i", msgstore_file, "--no-blobs", "--freespace"], stdout=log, shell=True)
             c.wait()
             log.close()
-            exec_command = self.system_slash(r'{}/libs/undark.exe -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
+            exec_command = system_slash(r'{}/libs/undark.exe -i "{}" --no-blobs --freespace > "{}"'.format(whapa_path, msgstore_file, log_file))
 
         self.label_status.set(exec_command)
         print("[i] Finished")
@@ -1195,9 +1189,9 @@ To export chats on an iOS phone, here are the steps:
                 self.cmd += ' -o "{}\\"'.format(self.whacipher_out.get()).strip("\n")
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -1208,9 +1202,9 @@ To export chats on an iOS phone, here are the steps:
         self.cmd += ' -o "{}"'.format(self.whacipher_out_en.get()).strip("\n")
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whacipher.py" {}'.format(whapa_path, self.cmd))
         self.label_status.set(exec)
         os.system(exec)
 
@@ -1234,9 +1228,9 @@ To export chats on an iOS phone, here are the steps:
         """Run merge command"""
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
+            exec = system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
         else:
-            exec = self.system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
+            exec = system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
 
         self.label_status.set(exec)
         os.system(exec)
@@ -1251,9 +1245,9 @@ To export chats on an iOS phone, here are the steps:
                 self.whachat_file.set(self.path.replace("/", "\\"))
 
             if system == "Linux":
-                exec = self.system_slash(r'python3 "{}/libs/whachat.py" "{}" -p -s {}'.format(whapa_path, self.whachat_file.get(), self.whachat_box_os.get()))
+                exec = system_slash(r'python3 "{}/libs/whachat.py" "{}" -p -s {}'.format(whapa_path, self.whachat_file.get(), self.whachat_box_os.get()))
             else:
-                exec = self.system_slash(r'python "{}/libs/whachat.py" "{}" -p -s {}'.format(whapa_path, self.whachat_file.get(), self.whachat_box_os.get()))
+                exec = system_slash(r'python "{}/libs/whachat.py" "{}" -p -s {}'.format(whapa_path, self.whachat_file.get(), self.whachat_box_os.get()))
 
             self.label_status.set(exec)
             os.system(exec)
@@ -1323,9 +1317,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -u "{}"'.format(self.combo_whachat_user.get().rstrip("\n"))
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whachat.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whachat.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whachat.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whachat.py" {}'.format(whapa_path, self.cmd))
 
         self.label_status.set(exec)
         os.system(exec)
@@ -1375,9 +1369,9 @@ To export chats on an iOS phone, here are the steps:
             self.cmd += ' -o "{}/"'.format(self.whagodri_path.get()).strip("\n")
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whagodri.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whagodri.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whagodri.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whagodri.py" {}'.format(whapa_path, self.cmd))
 
         self.label_status.set(exec)
         os.system(exec)
@@ -1414,9 +1408,9 @@ To export chats on an iOS phone, here are the steps:
                 self.cmd += ' -o "{}/"'.format(self.whagodri_path.get()).strip("\n")
 
         if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whacloud.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python3 "{}/libs/whacloud.py" {}'.format(whapa_path, self.cmd))
         else:
-            exec = self.system_slash(r'python "{}/libs/whacloud.py" {}'.format(whapa_path, self.cmd))
+            exec = system_slash(r'python "{}/libs/whacloud.py" {}'.format(whapa_path, self.cmd))
 
         self.label_status.set(exec)
         os.system(exec)
@@ -1430,9 +1424,9 @@ To export chats on an iOS phone, here are the steps:
         """Install dependencies"""
 
         if system == "Linux":
-            exec = self.system_slash(r'sudo pip3 install --upgrade -r "{}/doc/requirements.txt"'.format(whapa_path))
+            exec = system_slash(r'sudo pip3 install --upgrade -r "{}/doc/requirements.txt"'.format(whapa_path))
         else:
-            exec = self.system_slash(r'pip install --upgrade -r "{}/doc/requirements.txt"'.format(whapa_path))
+            exec = system_slash(r'pip install --upgrade -r "{}/doc/requirements.txt"'.format(whapa_path))
         self.label_status.set(exec)
         os.system(exec)
 

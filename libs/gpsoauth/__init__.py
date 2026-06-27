@@ -1,6 +1,7 @@
 """A python client library for Google Play Services OAuth."""
 
 from collections.abc import MutableMapping
+from dataclasses import dataclass, field
 from importlib.metadata import version
 import ssl
 from typing import Iterable
@@ -79,6 +80,19 @@ class AuthHTTPAdapter(requests.adapters.HTTPAdapter):
         self.poolmanager = PoolManager(*args, ssl_context=context, **kwargs)
 
 
+@dataclass
+class DeviceConfig:
+    """Encapsulates common device configuration parameters for OAuth requests."""
+    android_id: str
+    service: str = "ac2dm"
+    device_country: str = "us"
+    operator_country: str = "us"
+    lang: str = "en"
+    sdk_version: int = 17
+    client_sig: str = "38918a453d07199354f8b19af05ec6562ced5788"
+    proxy: MutableMapping[str, str] | None = None
+
+
 def _perform_auth_request(
     data: dict[str, int | str | bytes], proxies: MutableMapping[str, str] | None = None
 ) -> dict[str, str]:
@@ -96,14 +110,7 @@ def _perform_auth_request(
 def perform_master_login(
     email: str,
     password: str,
-    android_id: str,
-    service: str = "ac2dm",
-    device_country: str = "us",
-    operator_country: str = "us",
-    lang: str = "en",
-    sdk_version: int = 17,
-    proxy: MutableMapping[str, str] | None = None,
-    client_sig: str = "38918a453d07199354f8b19af05ec6562ced5788",
+    device_config: DeviceConfig,
 ) -> dict[str, str]:
     """
     Perform a master login, which is what Android does when you first add
@@ -133,31 +140,25 @@ def perform_master_login(
         "EncryptedPasswd": google.construct_signature(
             email, password, ANDROID_KEY_7_3_29
         ),
-        "service": service,
+        "service": device_config.service,
         "source": "android",
-        "androidId": android_id,
-        "device_country": device_country,
-        "operatorCountry": operator_country,
-        "lang": lang,
-        "sdk_version": sdk_version,
-        "client_sig": client_sig,
-        "callerSig": client_sig,
+        "androidId": device_config.android_id,
+        "device_country": device_config.device_country,
+        "operatorCountry": device_config.operator_country,
+        "lang": device_config.lang,
+        "sdk_version": device_config.sdk_version,
+        "client_sig": device_config.client_sig,
+        "callerSig": device_config.client_sig,
         "droidguard_results": "dummy123"
     }
 
-    return _perform_auth_request(data, proxy)
+    return _perform_auth_request(data, device_config.proxy)
 
 
 def perform_master_login_oauth(
     email: str,
     oauth_token: str,
-    android_id: str,
-    service: str = "ac2dm",
-    device_country: str = "us",
-    operator_country: str = "us",
-    lang: str = "en",
-    sdk_version: int = 28,
-    proxy: MutableMapping[str, str] | None = None,
+    device_config: DeviceConfig,
 ) -> dict[str, str]:
     """
     Perform a master login, which is what Android does when you first add
@@ -182,34 +183,27 @@ def perform_master_login_oauth(
     """
 
     data: dict[str, int | str | bytes] = {
-        "lang": lang,
+        "lang": device_config.lang,
         "google_play_services_version": 240913000,
-        "sdk_version": sdk_version,
-        "device_country": device_country,
+        "sdk_version": device_config.sdk_version,
+        "device_country": device_config.device_country,
         "Email": email,
-        "service": service,
+        "service": device_config.service,
         "get_accountid": 1,
         "ACCESS_TOKEN": 1,
         "callerPkg": "com.google.android.gms",
         "add_account": 1,
         "Token": oauth_token,
-        "callerSig": "38918a453d07199354f8b19af05ec6562ced5788",
+        "callerSig": device_config.client_sig,
     }
 
-    return _perform_auth_request(data, proxy)
+    return _perform_auth_request(data, device_config.proxy)
 
 
 def exchange_token(
     email: str,
     token: str,
-    android_id: str,
-    service: str = "ac2dm",
-    device_country: str = "us",
-    operator_country: str = "us",
-    lang: str = "en",
-    sdk_version: int = 17,
-    proxy: MutableMapping[str, str] | None = None,
-    client_sig: str = "38918a453d07199354f8b19af05ec6562ced5788",
+    device_config: DeviceConfig,
 ) -> dict[str, str]:
     """
     Exchanges a web oauth_token for a master token.
@@ -238,33 +232,27 @@ def exchange_token(
         "add_account": 1,
         "ACCESS_TOKEN": 1,
         "Token": token,
-        "service": service,
+        "service": device_config.service,
         "source": "android",
-        "androidId": android_id,
-        "device_country": device_country,
-        "operatorCountry": operator_country,
-        "lang": lang,
-        "sdk_version": sdk_version,
-        "client_sig": client_sig,
-        "callerSig": client_sig,
+        "androidId": device_config.android_id,
+        "device_country": device_config.device_country,
+        "operatorCountry": device_config.operator_country,
+        "lang": device_config.lang,
+        "sdk_version": device_config.sdk_version,
+        "client_sig": device_config.client_sig,
+        "callerSig": device_config.client_sig,
         "droidguard_results": "dummy123",
     }
 
-    return _perform_auth_request(data, proxy)
+    return _perform_auth_request(data, device_config.proxy)
 
 
 def perform_oauth(
     email: str,
     master_token: str,
-    android_id: str,
     service: str,
     app: str,
-    client_sig: str,
-    device_country: str = "us",
-    operator_country: str = "us",
-    lang: str = "en",
-    sdk_version: int = 17,
-    proxy: MutableMapping[str, str] | None = None,
+    device_config: DeviceConfig,
 ) -> dict[str, str]:
     """
     Use a master token from master_login to perform OAuth to a specific Google service.
@@ -290,14 +278,14 @@ def perform_oauth(
         "EncryptedPasswd": master_token,
         "service": service,
         "source": "android",
-        "androidId": android_id,
+        "androidId": device_config.android_id,
         "app": app,
-        "client_sig": client_sig,
-        "device_country": device_country,
-        "operatorCountry": operator_country,
-        "lang": lang,
-        "sdk_version": sdk_version,
+        "client_sig": device_config.client_sig,
+        "device_country": device_config.device_country,
+        "operatorCountry": device_config.operator_country,
+        "lang": device_config.lang,
+        "sdk_version": device_config.sdk_version,
         "google_play_services_version": 240913000
     }
 
-    return _perform_auth_request(data, proxy)
+    return _perform_auth_request(data, device_config.proxy)

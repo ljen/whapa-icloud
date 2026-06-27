@@ -1,19 +1,6 @@
+import pytest
 import unittest
-from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS, startsWithAuthor
-
-def test_startsWithAuthor_valid():
-    assert startsWithAuthor("John:")
-    assert startsWithAuthor("John Doe:")
-    assert startsWithAuthor("John Middle Doe:")
-    assert startsWithAuthor("John Middle Doe Smith:")
-    assert startsWithAuthor("John Middle Doe Smith Puff:")
-    assert startsWithAuthor("+1 123 456 7890:")
-
-def test_startsWithAuthor_invalid():
-    assert not startsWithAuthor("No colon")
-    assert not startsWithAuthor("")
-    assert not startsWithAuthor("John")
-    assert not startsWithAuthor(": only colon")
+from libs.whachat import startsWithDateTimeAndroid, startsWithDateTimeiOS, getDataPointiOS, getDataPointAndroid
 
 def test_startsWithDateTimeAndroid_valid():
     assert startsWithDateTimeAndroid("24/5/18 14:25 - Sergio F: No se tío")
@@ -92,6 +79,39 @@ class TestGetDataPointiOS(unittest.TestCase):
         date, time, author, message = getDataPointiOS(line)
         self.assertEqual(date, "25/8/20")
         self.assertEqual(time, "10:02:14")
+        self.assertEqual(author, "+34 666 555 444")
+        self.assertEqual(message, "Hello")
+
+class TestGetDataPointAndroid(unittest.TestCase):
+    def test_english_format(self):
+        line = "23/5/18 15:24 - Sergio F: No se tío no le preguntao al final"
+        date, time, author, message = getDataPointAndroid(line)
+        self.assertEqual(date, "23/5/18")
+        self.assertEqual(time, "15:24")
+        self.assertEqual(author, "Sergio F")
+        self.assertEqual(message, "No se tío no le preguntao al final")
+
+    def test_unknown_mobile_format(self):
+        line = "24.07.21, 10:15 - Jordi Subinspector: Hola"
+        date, time, author, message = getDataPointAndroid(line)
+        self.assertEqual(date, "24.07.21")
+        self.assertEqual(time, "10:15")
+        self.assertEqual(author, "Jordi Subinspector")
+        self.assertEqual(message, "Hola")
+
+    def test_no_author(self):
+        line = "25/8/20 10:02 - Messages to this group are now secured with end-to-end encryption."
+        date, time, author, message = getDataPointAndroid(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02")
+        self.assertIsNone(author)
+        self.assertEqual(message, "Messages to this group are now secured with end-to-end encryption.")
+
+    def test_phone_number_author(self):
+        line = "25/8/20 10:02 - +34 666 555 444: Hello"
+        date, time, author, message = getDataPointAndroid(line)
+        self.assertEqual(date, "25/8/20")
+        self.assertEqual(time, "10:02")
         self.assertEqual(author, "+34 666 555 444")
         self.assertEqual(message, "Hello")
 

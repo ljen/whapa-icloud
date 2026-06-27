@@ -133,16 +133,16 @@ def merge(db_path, db_name):
                     cursor_write = output.cursor()
 
                 cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = cursor_write.fetchall()
+                ids_message_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = cursor_write.fetchall()
+                ids_chatlist_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = cursor_write.fetchall()
+                ids_quote_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = cursor_write.fetchall()
+                ids_thumb_write = set(cursor_write.fetchall())
 
                 print("   [-] " + db_name + " --> " + str(len(ids_message_write)) + " messages, " + str(len(ids_chatlist_write)) + " chats, " + str(len(ids_quote_write)) + " replies, " + str(len(ids_thumb_write)) + " thumbnails")
                 # Open read connection
@@ -303,16 +303,16 @@ def merge_win(db_path, db_name):
                     cursor_write = output.cursor()
 
                 cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = cursor_write.fetchall()
+                ids_message_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = cursor_write.fetchall()
+                ids_chatlist_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = cursor_write.fetchall()
+                ids_quote_write = set(cursor_write.fetchall())
 
                 cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = cursor_write.fetchall()
+                ids_thumb_write = set(cursor_write.fetchall())
 
                 print("   [-] " + db_name + " --> " + str(len(ids_message_write)) + " messages, " + str(
                     len(ids_chatlist_write)) + " chats, " + str(len(ids_quote_write)) + " replies, " + str(

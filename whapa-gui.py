@@ -165,7 +165,7 @@ class Whapa:
    3. Press More.
    4. Select Export chat.
    5. Choose Include or Exclude files.
-   
+
 To export chats on an iOS phone, here are the steps:
    1. Open the individual or group chat.
    2. Press on the name (Chat information).
@@ -1233,13 +1233,22 @@ To export chats on an iOS phone, here are the steps:
     def whamerge(self):
         """Run merge command"""
 
-        if system == "Linux":
-            exec = self.system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
-        else:
-            exec = self.system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
+        script_path = self.system_slash(r'{}/libs/whamerge.py'.format(whapa_path))
 
-        self.label_status.set(exec)
-        os.system(exec)
+        if system == "Linux":
+            python_cmd = "python3"
+        else:
+            python_cmd = "python"
+
+        cmd = [python_cmd, script_path, self.whamerge_path.get(), "-o", self.whamerge_file.get()]
+
+        if system == "Linux":
+            exec_str = self.system_slash(r'python3 "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
+        else:
+            exec_str = self.system_slash(r'python "{}/libs/whamerge.py" "{}" -o "{}"'.format(whapa_path, self.whamerge_path.get(), self.whamerge_file.get()))
+
+        self.label_status.set(exec_str)
+        subprocess.run(cmd)
 
     def search_file_whachat(self):
         """Search a file and load participants"""
@@ -1477,7 +1486,7 @@ if __name__ == '__main__':
                 # You can specify a list of celnumbr = BackupNumber1, BackupNumber2, ...
                 celnumbr = ""
 
-                [icloud-auth] 
+                [icloud-auth]
                 icloud  = alias@icloud.com
                 passw = yourpassword
                 """).lstrip())

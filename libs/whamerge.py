@@ -163,31 +163,36 @@ def merge(db_path, db_name):
                 print("   [-] " + filename + " --> " + str(len(ids_message_read)) + " messages, " + str(len(ids_chatlist_read)) + " chats, " + str(len(ids_quote_read)) + " replies, " + str(len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
+                ids_message_write_set = set(ids_message_write)
+                ids_chatlist_write_set = set(ids_chatlist_write)
+                ids_quote_write_set = set(ids_quote_write)
+                ids_thumb_write_set = set(ids_thumb_write)
+
                 print("[+] Looking for new messages")
                 ids_message_insert = []
                 for item in ids_message_read:
-                    if item not in ids_message_write:
+                    if item not in ids_message_write_set:
                         ids_message_insert.append(str(item[0]))
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write:
+                    if item not in ids_chatlist_write_set:
                         ids_chatlist_insert.append(str(item[0]))
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
                 ids_quote_insert = []
                 for item in ids_quote_read:
-                    if item not in ids_quote_write:
+                    if item not in ids_quote_write_set:
                         ids_quote_insert.append(str(item[0]))
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
-                    if item not in ids_thumb_write:
+                    if item not in ids_thumb_write_set:
                         ids_thumb_insert.append(str(item[0]))
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 
@@ -333,31 +338,36 @@ def merge_win(db_path, db_name):
                     len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
+                ids_message_write_set = set(ids_message_write)
+                ids_chatlist_write_set = set(ids_chatlist_write)
+                ids_quote_write_set = set(ids_quote_write)
+                ids_thumb_write_set = set(ids_thumb_write)
+
                 print("[+] Looking for new messages")
                 ids_message_insert = []
                 for item in ids_message_read:
-                    if item not in ids_message_write:
+                    if item not in ids_message_write_set:
                         ids_message_insert.append(str(item[0]))
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write:
+                    if item not in ids_chatlist_write_set:
                         ids_chatlist_insert.append(str(item[0]))
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
                 ids_quote_insert = []
                 for item in ids_quote_read:
-                    if item not in ids_quote_write:
+                    if item not in ids_quote_write_set:
                         ids_quote_insert.append(str(item[0]))
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
-                    if item not in ids_thumb_write:
+                    if item not in ids_thumb_write_set:
                         ids_thumb_insert.append(str(item[0]))
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 

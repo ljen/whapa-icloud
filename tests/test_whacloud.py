@@ -6,6 +6,9 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from libs.whacloud import _pkcs7_strip, _safe_join
+from unittest.mock import patch
+from libs.whacloud import lzfse_decode
+import libs.whacloud
 
 class TestPkcs7Strip(unittest.TestCase):
     def test_valid_padding(self):
@@ -85,6 +88,20 @@ class TestSafeJoin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
+
+class TestLZFSEDecode(unittest.TestCase):
+    @patch('libs.whacloud._lib')
+    def test_lzfse_decode_error(self, mock_lib):
+        mock_lib.compression_decode_buffer.return_value = 0
+        with self.assertRaises(RuntimeError) as context:
+            lzfse_decode(b"dummy", 10)
+        self.assertEqual(str(context.exception), "LZFSE decode failed")
+
+    @patch('libs.whacloud._lib', new=None)
+    def test_lzfse_decode_no_lib(self):
+        with self.assertRaises(RuntimeError) as context:
+            lzfse_decode(b"dummy", 10)
+        self.assertEqual(str(context.exception), "libcompression.dylib not found. This script requires macOS.")
 
 if __name__ == '__main__':
     unittest.main()

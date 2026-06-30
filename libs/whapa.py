@@ -35,12 +35,12 @@ def banner():
     """Function Banner"""
 
     print(r"""
-     __      __.__          __________         
-    /  \    /  \  |__ _____ \______   \_____   
-    \   \/\/   /  |  \\__  \ |     ___/\__  \  
+     __      __.__          __________
+    /  \    /  \  |__ _____ \______   \_____
+    \   \/\/   /  |  \\__  \ |     ___/\__  \
      \        /|   Y  \/ __ \|    |     / __ \_
       \__/\  / |___|  (____  /____|    (____  /
-           \/       \/     \/               \/ 
+           \/       \/     \/               \/
     ------------- Whatsapp Parser -------------
     """)
 
@@ -49,7 +49,7 @@ def help():
     """Function show help"""
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-    
+
     Usage: python3 whapa.py -h (for help)
     """)
 
@@ -358,7 +358,7 @@ background-color: #cdcdcd;
             + """</h1>
                 <tr>
                     <th>Record</th>
-                    <th>Unit / Company</th> 
+                    <th>Unit / Company</th>
                     <th>Examiner</th>
                     <th>Date</th>
                 </tr>
@@ -454,7 +454,7 @@ background-color: #cdcdcd;
             + """</h1>
                 <tr>
                     <th>Registro</th>
-                    <th>Unidad / Compañia</th> 
+                    <th>Unidad / Compañia</th>
                     <th>Examinador</th>
                     <th>Fecha</th>
                 </tr>
@@ -544,7 +544,7 @@ def index_report(obj, html):
     <!-- Custom styles for this template -->
     <link href="./cfg/chat.css" rel="stylesheet">
 </head>
-    
+
 <style>
 table {
 font-family: arial, sans-serif;
@@ -564,7 +564,7 @@ background-color: #dddddd;
     width: 100%;
 }
 </style>
-    
+
 <body  background="./cfg/background-index.png">
     <!-- Fixed navbar -->
         <div class="containerindex theme-showcase">
@@ -3561,7 +3561,7 @@ def messages(consult, rows, report_html, local):
                             rep_med += (
                                 """
             <li>
-                <div class="bubble-system"> 
+                <div class="bubble-system">
                     <span class="time-system round">"""
                                 + report_time
                                 + "&nbsp"
@@ -3577,7 +3577,7 @@ def messages(consult, rows, report_html, local):
                             rep_med += (
                                 """
             <li>
-                <div class="bubble"> 
+                <div class="bubble">
                     <span class="personName">"""
                                 + report_name
                                 + """</span><br><br>
@@ -3815,7 +3815,7 @@ def info(opt, local):
                 )
                 rep_med += (
                     """  <li>
-                                    <div class="bubble"> 
+                                    <div class="bubble">
                                         <span class="personName">"""
                     + report_name
                     + """</span><br></br>
@@ -4219,9 +4219,22 @@ if __name__ == "__main__":
                         chats_live.append(i[0])
                     report_med = " "
                     print("Loading data ...")
+
+                    sql_count_group = sql_count.replace("SELECT COUNT(*)", "SELECT messages.key_remote_jid, COUNT(*)", 1) + " GROUP BY messages.key_remote_jid"
+                    cursor.execute(sql_count_group)
+                    counts_by_jid = {}
+                    while True:
+                        chunk = cursor.fetchmany(1000)
+                        if not chunk:
+                            break
+                        for row in chunk:
+                            if row[0]:
+                                counts_by_jid[row[0]] = row[1]
+
                     for i in chats_live:
                         sql_string_copy = sql_string
-                        sql_count_copy = sql_count
+
+                        chat_count = sum(v for k, v in counts_by_jid.items() if i in k)
 
                         if i.split("@")[1] == "g.us":
                             if report_var == "EN":
@@ -4247,12 +4260,9 @@ if __name__ == "__main__":
                                     + "</a></th></tr>"
                                 )
                             sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = i
                             arg_user = ""
-                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
-                            result = cursor.fetchone()
-                            print("\nNumber of messages: {}".format(str(result[0])))
+                            print("\nNumber of messages: {}".format(str(chat_count)))
                             print(
                                 Fore.RED
                                 + "--------------------------------------------------------------------------------"
@@ -4297,12 +4307,9 @@ if __name__ == "__main__":
                                     "report_user_chat_" + i.split("@")[0] + ".html"
                                 )
                             sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i.split("@")[0]
-                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
-                            result = cursor.fetchone()
-                            print("\nNumber of messages: {}".format(str(result[0])))
+                            print("\nNumber of messages: {}".format(str(chat_count)))
                             print(
                                 Fore.RED
                                 + "--------------------------------------------------------------------------------"
@@ -4347,12 +4354,9 @@ if __name__ == "__main__":
                                     "report_broadcast_chat_" + i.split("@")[0] + ".html"
                                 )
                             sql_string_copy += " AND messages.key_remote_jid LIKE ?"
-                            sql_count_copy += " AND messages.key_remote_jid LIKE ?"
                             arg_group = ""
                             arg_user = i
-                            result = cursor.execute(sql_count_copy, ("%" + i + "%",))
-                            result = cursor.fetchone()
-                            print("\nNumber of messages: {}".format(str(result[0])))
+                            print("\nNumber of messages: {}".format(str(chat_count)))
                             print(
                                 Fore.RED
                                 + "--------------------------------------------------------------------------------"
@@ -4370,7 +4374,7 @@ if __name__ == "__main__":
                             report_group, color = participants(arg_user)
 
                         sql_consult = cursor.execute(sql_string_copy, ("%" + i + "%",))
-                        messages(sql_consult, result[0], report_html, local)
+                        messages(sql_consult, chat_count, report_html, local)
                         print()
 
                     if args.report:

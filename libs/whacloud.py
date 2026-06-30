@@ -51,14 +51,16 @@ def hkdf_legacy(ikm, salt, info, length):
     if salt is None:
         salt = b"\x00" * 32
     prk = hmac.new(salt, ikm, hashlib.sha256).digest()
-    out = b""
+    out_parts = []
+    out_len = 0
     t = b""
     i = 0
-    while len(out) < length:
+    while out_len < length:
         t = hmac.new(prk, t + info + bytes([i & 0xFF]), hashlib.sha256).digest()
-        out += t
+        out_parts.append(t)
+        out_len += len(t)
         i += 1
-    return out[:length]
+    return b"".join(out_parts)[:length]
 
 
 def hkdf_v1(ikm, info, length):

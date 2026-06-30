@@ -270,7 +270,7 @@ background-color: #cdcdcd;
 
 
 def system_slash(string):
-    """Change / or \ depend on the OS"""
+    r"""Change / or \ depend on the OS"""
 
     if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
         return string.replace("/", "\\")
@@ -296,7 +296,7 @@ def get_configs():
 
 
 def startsWithDateTimeiOS(s):
-    pattern = "^\[([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*)\]"  # [25/8/20, 19:52:23]
+    pattern = r"^\[([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*)\]"  # [25/8/20, 19:52:23]
     result = re.match(pattern, s)
     if result:
         return True
@@ -306,7 +306,7 @@ def startsWithDateTimeiOS(s):
 def startsWithDateTimeAndroid(s):
     # pattern = "^([0-9]*/[0-9]*/[0-9]*\W*[0-9]*.[0-9]*.[0-9]*)-"  # 24/5/18 14:25 -
     pattern = (
-        "^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -"  # 24.07.21, 10:15 -
+        r"^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -"  # 24.07.21, 10:15 -
     )
     result = re.match(pattern, s)
     if result:
@@ -316,12 +316,12 @@ def startsWithDateTimeAndroid(s):
 
 def startsWithAuthor(s):
     patterns = [
-        "([\w]+):",  # First Name
-        "([\w]+[\s]+[\w]+):",  # First Name + Last Name
-        "([\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name
-        "([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing
-        "([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing + pufff
-        "(\W.*):",  # PhoneNumber
+        r"([\w]+):",  # First Name
+        r"([\w]+[\s]+[\w]+):",  # First Name + Last Name
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing + pufff
+        r"(\W.*):",  # PhoneNumber
     ]
     pattern = "^" + "|".join(patterns)
     result = re.match(pattern, s)
@@ -578,7 +578,7 @@ def getAttachediOS(message):
 
 
 def getAttachedAndroid(message):
-    pattern = "(.*) \(attached file\)|(.*) \(archivo adjunto\)"
+    pattern = r"(.*) \(attached file\)|(.*) \(archivo adjunto\)"
     result = re.match(pattern, message)
     if result:
         file = result.group(1)

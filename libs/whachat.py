@@ -31,12 +31,12 @@ whapa_path = os.path.sep.join(split_path)  # C:\Users\Desktop\whapa
 def banner():
     """Function Banner"""
     print(r"""
-     __      __.__           _________ .__            __   
-    /  \    /  \  |__ _____  \_   ___ \|  |__ _____ _/  |_ 
+     __      __.__           _________ .__            __
+    /  \    /  \  |__ _____  \_   ___ \|  |__ _____ _/  |_
     \   \/\/   /  |  \\__  \ /    \  \/|  |  \\__  \\   __\
-     \        /|   Y  \/ __ \\     \___|   Y  \/ __ \|  |  
-      \__/\  / |___|  (____  /\______  /___|  (____  /__|  
-           \/       \/     \/        \/     \/     \/     
+     \        /|   Y  \/ __ \\     \___|   Y  \/ __ \|  |
+      \__/\  / |___|  (____  /\______  /___|  (____  /__|
+           \/       \/     \/        \/     \/     \/
     ---------------- Whatsapp Chat Exporter -----------------
     """)
 
@@ -45,7 +45,7 @@ def help():
     """Function show help"""
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-    
+
     Usage: python3 whachat.py -h (for help)
     """)
 
@@ -121,7 +121,7 @@ background-color: #cdcdcd;
             + """</h1>
                 <tr>
                     <th>Record</th>
-                    <th>Unit / Company</th> 
+                    <th>Unit / Company</th>
                     <th>Examiner</th>
                     <th>Date</th>
                 </tr>
@@ -211,7 +211,7 @@ background-color: #cdcdcd;
             + """</h1>
                 <tr>
                     <th>Registro</th>
-                    <th>Unidad / Compañia</th> 
+                    <th>Unidad / Compañia</th>
                     <th>Examinador</th>
                     <th>Fecha</th>
                 </tr>
@@ -270,7 +270,7 @@ background-color: #cdcdcd;
 
 
 def system_slash(string):
-    """Change / or \ depend on the OS"""
+    r"""Change / or \ depend on the OS"""
 
     if sys.platform == "win32" or sys.platform == "win64" or sys.platform == "cygwin":
         return string.replace("/", "\\")
@@ -296,7 +296,7 @@ def get_configs():
 
 
 def startsWithDateTimeiOS(s):
-    pattern = "^\[([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*)\]"  # [25/8/20, 19:52:23]
+    pattern = r"^\[([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*)\]"  # [25/8/20, 19:52:23]
     result = re.match(pattern, s)
     if result:
         return True
@@ -306,7 +306,7 @@ def startsWithDateTimeiOS(s):
 def startsWithDateTimeAndroid(s):
     # pattern = "^([0-9]*/[0-9]*/[0-9]*\W*[0-9]*.[0-9]*.[0-9]*)-"  # 24/5/18 14:25 -
     pattern = (
-        "^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -"  # 24.07.21, 10:15 -
+        r"^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -"  # 24.07.21, 10:15 -
     )
     result = re.match(pattern, s)
     if result:
@@ -316,12 +316,12 @@ def startsWithDateTimeAndroid(s):
 
 def startsWithAuthor(s):
     patterns = [
-        "([\w]+):",  # First Name
-        "([\w]+[\s]+[\w]+):",  # First Name + Last Name
-        "([\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name
-        "([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing
-        "([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing + pufff
-        "(\W.*):",  # PhoneNumber
+        r"([\w]+):",  # First Name
+        r"([\w]+[\s]+[\w]+):",  # First Name + Last Name
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing
+        r"([\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+[\s]+[\w]+):",  # First Name + Middle Name + Last Name + other thing + pufff
+        r"(\W.*):",  # PhoneNumber
     ]
     pattern = "^" + "|".join(patterns)
     result = re.match(pattern, s)
@@ -578,7 +578,7 @@ def getAttachediOS(message):
 
 
 def getAttachedAndroid(message):
-    pattern = "(.*) \(attached file\)|(.*) \(archivo adjunto\)"
+    pattern = r"(.*) \(attached file\)|(.*) \(archivo adjunto\)"
     result = re.match(pattern, message)
     if result:
         file = result.group(1)
@@ -831,7 +831,7 @@ def messages(
                         rep_med += (
                             """
                 <li>
-                    <div class="bubble-system"> 
+                    <div class="bubble-system">
                         <span class="time-system round">"""
                             + report_time
                             + "&nbsp"
@@ -846,7 +846,7 @@ def messages(
                         rep_med += (
                             """
                 <li>
-                    <div class="bubble"> 
+                    <div class="bubble">
                         <span class="personName">"""
                             + report_name
                             + """</span><br>

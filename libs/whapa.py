@@ -1225,11 +1225,10 @@ def reply(id, local):
                 )
 
         elif int(rep[8]) == 14:  # Vcard Multiple
-            concat = ""
             chain = str(rep[19]).split("BEGIN:VCARD")
-            for i in chain[1:]:
-                concat += "BEGIN:VCARD"
-                concat += i.split("END:VCARD")[0] + "END:VCARD"
+            concat = "".join(
+                [f"BEGIN:VCARD{i.split('END:VCARD')[0]}END:VCARD" for i in chain[1:]]
+            )
             if report_var == "EN":
                 reply_msj += (
                     "<br>"

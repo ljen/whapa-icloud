@@ -131,5 +131,55 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(message, "Hello")
 
 
+class TestParticipantsColor(unittest.TestCase):
+    def setUp(self):
+        # Clear the global color dictionary before each test
+        import libs.whachat
+        libs.whachat.color.clear()
+
+    def test_participants_color_empty(self):
+        from libs.whachat import participants_color
+        import libs.whachat
+
+        result = participants_color([])
+        self.assertEqual(result, {})
+        self.assertEqual(libs.whachat.color, {})
+
+    def test_participants_color_assignment(self):
+        from libs.whachat import participants_color
+        import libs.whachat
+
+        users = ["alice", "bob", "charlie"]
+        result = participants_color(users)
+
+        expected_colors = [
+            "#FF0000", "#000000", "#5586e5", "#800000",
+            "#00008B", "#006400", "#800080", "#8B4513",
+            "#FF4500", "#2F4F4F", "#DC143C", "#696969",
+            "#008B8B", "#D2691E", "#CD5C5C", "#4682B4",
+        ]
+
+        self.assertEqual(len(result), 3)
+        for user in users:
+            self.assertIn(user, result)
+            self.assertIn(result[user], expected_colors)
+
+        # Check global state
+        self.assertEqual(libs.whachat.color, result)
+
+    def test_participants_color_preserves_existing(self):
+        from libs.whachat import participants_color
+        import libs.whachat
+
+        libs.whachat.color["existing_user"] = "#123456"
+        users = ["new_user"]
+        result = participants_color(users)
+
+        self.assertIn("existing_user", result)
+        self.assertEqual(result["existing_user"], "#123456")
+        self.assertIn("new_user", result)
+        self.assertEqual(len(result), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

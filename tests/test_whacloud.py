@@ -5,7 +5,50 @@ import sys
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1, hkdf_legacy
+
+
+class TestHkdfLegacy(unittest.TestCase):
+    def test_hkdf_legacy_known_output(self):
+        ikm = b"ikm_test_data"
+        info = b"info_test_data"
+        salt = b"salt_test_data"
+        length = 32
+        expected_hex = "fffa3dd84da5ca36b14e5ebe16845a2cb00c3ef653b392685156c3651e8eadf1"
+        out = hkdf_legacy(ikm, salt, info, length)
+        self.assertEqual(out.hex(), expected_hex)
+
+    def test_hkdf_legacy_none_salt(self):
+        ikm = b"ikm_test_data"
+        info = b"info_test_data"
+        length = 32
+
+        # Test output with salt = None
+        out_none_salt = hkdf_legacy(ikm, None, info, length)
+
+        # Test output with salt explicitly set to 32 null bytes
+        explicit_salt = b"\x00" * 32
+        out_explicit_salt = hkdf_legacy(ikm, explicit_salt, info, length)
+
+        self.assertEqual(out_none_salt, out_explicit_salt)
+
+    def test_hkdf_legacy_length(self):
+        ikm = b"ikm_test_data"
+        info = b"info_test_data"
+        salt = b"salt_test_data"
+
+        for length in [1, 16, 32, 48, 64]:
+            out = hkdf_legacy(ikm, salt, info, length)
+            self.assertEqual(len(out), length)
+
+    def test_hkdf_legacy_empty_info(self):
+        ikm = b"ikm_test_data"
+        info = b""
+        salt = b"salt_test_data"
+        length = 16
+
+        out = hkdf_legacy(ikm, salt, info, length)
+        self.assertEqual(len(out), length)
 
 
 class TestHkdfV1(unittest.TestCase):

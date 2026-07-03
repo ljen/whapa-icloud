@@ -4,6 +4,7 @@ from libs.whachat import (
     startsWithDateTimeiOS,
     getDataPointiOS,
     getDataPointAndroid,
+    startsWithAuthor,
 )
 
 
@@ -129,6 +130,23 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(time, "10:02")
         self.assertEqual(author, "+34 666 555 444")
         self.assertEqual(message, "Hello")
+
+
+class TestStartsWithAuthor(unittest.TestCase):
+    def test_startsWithAuthor_valid(self):
+        self.assertTrue(startsWithAuthor("John:"))
+        self.assertTrue(startsWithAuthor("John Doe:"))
+        self.assertTrue(startsWithAuthor("John Doe Smith:"))
+        self.assertTrue(startsWithAuthor("John Doe Smith Jones:"))
+        self.assertTrue(startsWithAuthor("John Doe Smith Jones Garcia:"))
+        self.assertTrue(startsWithAuthor("+34 666 555 444:"))
+        self.assertTrue(startsWithAuthor("+1 (555) 123-4567:"))
+
+    def test_startsWithAuthor_invalid(self):
+        self.assertFalse(startsWithAuthor("This string has no colon at the end"))
+        self.assertFalse(startsWithAuthor("Messages to this group are now secured with end-to-end encryption."))
+        self.assertFalse(startsWithAuthor("This author name has exactly six words:"))
+        self.assertFalse(startsWithAuthor(""))
 
 
 if __name__ == "__main__":

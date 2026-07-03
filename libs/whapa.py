@@ -129,8 +129,7 @@ def names(obj):
                 print("wa.db connected")
 
                 try:
-                    for data in sql_names:
-                        names_dict.update({data[0]: data[1]})
+                    names_dict.update(dict(sql_names))
                 except Exception as e:
                     print("Error adding items in the dictionary:", e)
         except Exception as e:

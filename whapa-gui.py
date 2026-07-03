@@ -1529,7 +1529,7 @@ To export chats on an iOS phone, here are the steps:
 
         cfg_file = system_slash(r"{}/cfg/settings.cfg".format(whapa_path))
         if system == "Linux":
-            os.system('xdg-open "{}"'.format(cfg_file))
+            subprocess.run(["xdg-open", cfg_file], check=True)
         else:
             os.startfile(cfg_file)
 
@@ -1538,7 +1538,7 @@ To export chats on an iOS phone, here are the steps:
 
         readme_file = system_slash(r"{}/README.md".format(whapa_path))
         if system == "Linux":
-            os.system('xdg-open "{}"'.format(readme_file))
+            subprocess.run(["xdg-open", readme_file], check=True)
         else:
             os.startfile(readme_file)
 

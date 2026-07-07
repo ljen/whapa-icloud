@@ -141,6 +141,34 @@ class TestWhamerge(unittest.TestCase):
         finally:
             shutil.rmtree(one_db_dir)
 
+    @patch("builtins.print")
+    @patch("libs.whamerge.shutil.copy")
+    def test_merge_copy_error(self, mock_copy, mock_print):
+        mock_copy.side_effect = Exception("Mocked copy error")
+        db_path = self.test_dir + os.sep
+
+        try:
+            merge(db_path, self.output_db)
+        except sqlite3.OperationalError:
+            # We expect an operational error since copy fails, meaning the db is not created,
+            # but whamerge attempts to connect to it right after
+            pass
+
+        mock_print.assert_any_call("[e] Error copying: ", mock_copy.side_effect)
+
+    @patch("builtins.print")
+    @patch("libs.whamerge.shutil.copy")
+    def test_merge_win_copy_error(self, mock_copy, mock_print):
+        mock_copy.side_effect = Exception("Mocked copy error")
+        db_path = self.test_dir + os.sep
+
+        try:
+            merge_win(db_path, self.output_db)
+        except sqlite3.OperationalError:
+            pass
+
+        mock_print.assert_any_call("[e] Error copying: ", mock_copy.side_effect)
+
 
 if __name__ == "__main__":
     unittest.main()

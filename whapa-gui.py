@@ -25,7 +25,6 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 
-
 """ Global vars"""
 author = "B16f00t"
 title = "WhatsApp Parser Toolset"
@@ -114,6 +113,22 @@ class Whapa:
         self.iconandroid = PhotoImage(file=self.icons[30])
         self.iconios = PhotoImage(file=self.icons[31])
 
+        self.setup_properties()
+        self.setup_variables()
+        self.setup_toolbar()
+        self.setup_main_frame()
+        self.setup_tab_panel()
+        self.setup_tab_whapa()
+        self.setup_tab_whacipher()
+        self.setup_tab_whamerge()
+        self.setup_tab_whagodri()
+        self.setup_tab_whachat()
+        self.setup_tab_whacloud()
+        self.setup_status_bar()
+        self.setup_shortcuts()
+        self.run_gui_setup()
+
+    def setup_properties(self):
         # Menu Windows Property
         self.root.title(title + " v" + version)
         self.root.iconphoto(self.root, self.iconlogo)
@@ -129,8 +144,9 @@ class Whapa:
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
+    def setup_variables(self):
         # Variables
-        """ Function that gets report config"""
+        """Function that gets report config"""
         self.wagodri_box_value = StringVar()
         self.whacipher_box_value = StringVar()
         self.wacloud_box_value = StringVar()
@@ -199,7 +215,7 @@ class Whapa:
    3. Press More.
    4. Select Export chat.
    5. Choose Include or Exclude files.
-   
+
 To export chats on an iOS phone, here are the steps:
    1. Open the individual or group chat.
    2. Press on the name (Chat information).
@@ -209,6 +225,7 @@ To export chats on an iOS phone, here are the steps:
         """
         )
 
+    def setup_toolbar(self):
         # Toolbar
         self.toolbar = Frame(self.root, relief=RAISED, bd=2)
         self.toolbar.grid(row=0, sticky="ew", columnspan=5)
@@ -251,6 +268,7 @@ To export chats on an iOS phone, here are the steps:
         self.toolbar_but8.grid(row=0, column=7)
         ToolTip(self.toolbar_but8, "Exit")
 
+    def setup_main_frame(self):
         # Top
         # self.label_bg = Label(self.root, image=self.iconbg, bg="#A0A0A0", font=("times", "8", "normal"))
         # self.label_bg.grid(row=1, padx=5, pady=5)
@@ -259,6 +277,7 @@ To export chats on an iOS phone, here are the steps:
         self.frame_main = Frame(self.root)
         self.frame_main.grid(row=1, sticky="ewn")
 
+    def setup_tab_panel(self):
         # Tab Panel
         self.note = ttk.Notebook(self.root)
         self.tab1 = Frame(self.note)
@@ -307,6 +326,7 @@ To export chats on an iOS phone, here are the steps:
         )
         self.note.grid(row=2, padx=10, pady=0, sticky="nwes")
 
+    def setup_tab_whapa(self):
         # Tab 1 Whapa
         self.label_whapa = Label(
             self.tab1, text="Whatsapp Parser", font=("courier", 15, "bold")
@@ -742,6 +762,7 @@ To export chats on an iOS phone, here are the steps:
         self.button_whapa_carv.grid(row=0, column=5, padx=5, pady=5)
         ToolTip(self.button_whapa_carv, "Database Carving")
 
+    def setup_tab_whacipher(self):
         # Tab 2 Whacipher
         self.label_whacipher = Label(
             self.tab2,
@@ -932,6 +953,7 @@ To export chats on an iOS phone, here are the steps:
         self.button_whacipher_en.grid(row=4, column=0, padx=10, pady=10, columnspan=2)
         ToolTip(self.button_whacipher_en, "Encrypt")
 
+    def setup_tab_whamerge(self):
         # Tab 3 Whamerge
         self.label_whamerge = Label(
             self.tab3, text="Whatsapp Merger", font=("courier", 15, "bold")
@@ -1013,6 +1035,7 @@ To export chats on an iOS phone, here are the steps:
             "The generated file is for analysis purposes, not for restoring on the phone,\n due to the fact that many tables have been omitted.",
         )
 
+    def setup_tab_whagodri(self):
         # Tab 4 Whagodri
         self.label_wagodri = Label(
             self.tab4,
@@ -1174,6 +1197,7 @@ To export chats on an iOS phone, here are the steps:
             "1. Install the requirements.\n2. Edit the values of the ./cfg/settings.cfg file.\n    [google-auth]\n        gmail = alias@gmail.com\n        passw = yourpassword\n3. Click here, https://accounts.google.com/DisplayUnlockCaptcha.\n    Log into your browser and then allow access to your Google account.",
         )
 
+    def setup_tab_whachat(self):
         # Tab 5 WhaChat
         self.label_wachat = Label(
             self.tab5, text="Whatsapp Chat Exporter", font=("courier", 15, "bold")
@@ -1325,6 +1349,7 @@ To export chats on an iOS phone, here are the steps:
         )
         self.button_whachat_exec.grid(row=5, column=1, columnspan=2, padx=185, pady=10)
 
+    def setup_tab_whacloud(self):
         # Tab 5 WhaCloud
         self.label_wacloud = Label(
             self.tab6, text="Whatsapp ICloud Extractor", font=("courier", 15, "bold")
@@ -1426,6 +1451,7 @@ To export chats on an iOS phone, here are the steps:
         )
         self.button_whacloud_exec.grid(row=1, column=0, columnspan=2, padx=185, pady=10)
 
+    def setup_status_bar(self):
         # Status Bar
         self.label_status.set(time.strftime("%d-%m-%Y %H:%M"))
         self.statusbar = Frame(self.root, bd=1, relief="sunken")
@@ -1438,6 +1464,7 @@ To export chats on an iOS phone, here are the steps:
         )
         self.status_bar_label.grid(columnspan=2)
 
+    def setup_shortcuts(self):
         # Define Shortcut keys
         self.root.bind("<Control-q>", lambda event: self.exit())
         # self.label_bg.bind("<Button-1>", lambda event: webbrowser.open_new_tab("https://github.com/B16f00t/whapa"))
@@ -1448,6 +1475,7 @@ To export chats on an iOS phone, here are the steps:
             ),
         )
 
+    def run_gui_setup(self):
         # Run GUI
         self.button_whacipher_path.config(state=DISABLED)
         self.entry_whacipher_path.config(state=DISABLED)
@@ -2352,8 +2380,7 @@ if __name__ == "__main__":
     if not os.path.isfile(cfg_file):
         # It creates the settings file
         with open(cfg_file, "w") as cfg:
-            cfg.write(
-                dedent("""
+            cfg.write(dedent("""
                 [report]
                 company = ""
                 record = ""
@@ -2373,11 +2400,10 @@ if __name__ == "__main__":
                 # You can specify a list of celnumbr = BackupNumber1, BackupNumber2, ...
                 celnumbr = ""
 
-                [icloud-auth] 
+                [icloud-auth]
                 icloud  = alias@icloud.com
                 passw = yourpassword
-                """).lstrip()
-            )
+                """).lstrip())
 
     error_icon = False
     img_folder = system_slash("{}/images/".format(whapa_path))

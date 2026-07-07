@@ -1,11 +1,12 @@
 import unittest
 import os
 import sys
+import tempfile
 
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1, is_media_tar
 
 
 class TestHkdfV1(unittest.TestCase):
@@ -119,6 +120,50 @@ class TestSafeJoin(unittest.TestCase):
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
 
+
+class TestIsMediaTar(unittest.TestCase):
+    def test_is_media_tar_valid(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"0" * 257 + b"ustar" + b"0" * 10)
+            path = f.name
+        try:
+            self.assertTrue(is_media_tar(path))
+        finally:
+            os.remove(path)
+
+    def test_is_media_tar_encrypted(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"\x83" + b"0" * 256 + b"ustar" + b"0" * 10)
+            path = f.name
+        try:
+            self.assertFalse(is_media_tar(path))
+        finally:
+            os.remove(path)
+
+    def test_is_media_tar_invalid(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"0" * 257 + b"notar" + b"0" * 10)
+            path = f.name
+        try:
+            self.assertFalse(is_media_tar(path))
+        finally:
+            os.remove(path)
+
+    def test_is_media_tar_short_file(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write(b"0" * 100)
+            path = f.name
+        try:
+            self.assertFalse(is_media_tar(path))
+        finally:
+            os.remove(path)
+
+    def test_is_media_tar_missing_file(self):
+        self.assertFalse(is_media_tar("/path/to/nonexistent/file.tar"))
+
+    def test_is_media_tar_directory(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertFalse(is_media_tar(d))
 
 if __name__ == "__main__":
     unittest.main()

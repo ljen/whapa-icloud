@@ -5,7 +5,36 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from colorama import Fore
-from libs.whapa import duration_file, size_file, status
+import sqlite3
+import tempfile
+from libs.whapa import duration_file, size_file, status, names
+import libs.whapa as whapa_mod
+
+
+class TestNames(unittest.TestCase):
+    def setUp(self):
+        whapa_mod.names_dict.clear()
+
+    def test_names_success(self):
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            db_path = f.name
+        try:
+            with sqlite3.connect(db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("CREATE TABLE wa_contacts (jid TEXT, display_name TEXT)")
+                cursor.execute("INSERT INTO wa_contacts VALUES ('user1', 'Alice')")
+                cursor.execute("INSERT INTO wa_contacts VALUES ('user2', 'Bob')")
+                conn.commit()
+
+            names(db_path)
+            self.assertEqual(whapa_mod.names_dict, {'user1': 'Alice', 'user2': 'Bob'})
+        finally:
+            if os.path.exists(db_path):
+                os.remove(db_path)
+
+    def test_names_missing_file(self):
+        names("non_existent_file.db")
+        self.assertEqual(whapa_mod.names_dict, {})
 
 
 class TestDurationFile(unittest.TestCase):

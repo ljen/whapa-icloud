@@ -5,7 +5,44 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from colorama import Fore
-from libs.whapa import duration_file, size_file, status
+import libs.whapa as whapa
+from libs.whapa import duration_file, size_file, status, gets_name
+
+
+class TestGetsName(unittest.TestCase):
+    def setUp(self):
+        # Save the original names_dict to restore it later
+        self.original_names_dict = whapa.names_dict.copy()
+
+    def tearDown(self):
+        # Restore original names_dict
+        whapa.names_dict.clear()
+        whapa.names_dict.update(self.original_names_dict)
+
+    def test_empty_names_dict(self):
+        whapa.names_dict.clear()
+        self.assertEqual(gets_name("12345"), " ")
+
+    def test_string_obj(self):
+        whapa.names_dict.clear()
+        whapa.names_dict.update({
+            "12345": "Alice",
+            "67890": None
+        })
+
+        self.assertEqual(gets_name("12345"), " (Alice)")
+        self.assertEqual(gets_name("67890"), "")
+        self.assertEqual(gets_name("unknown"), "")
+
+    def test_list_obj(self):
+        whapa.names_dict.clear()
+        # gets_name appends '@s.whatsapp.net' for list items when checking names_dict
+        whapa.names_dict.update({
+            "12345@s.whatsapp.net": "Alice",
+            "67890@s.whatsapp.net": None
+        })
+
+        self.assertEqual(gets_name(["12345", "67890", "unknown"]), " (Alice, 67890, unknown)")
 
 
 class TestDurationFile(unittest.TestCase):

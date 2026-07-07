@@ -705,23 +705,23 @@ def messages(
 
     rep_med = ""  # Saves the complete chat
     rows = len(data.index)
-    for i in data.index:
+    for row in data.itertuples():
         try:
             report_msj = ""  # Saves each message
             report_name = ""  # Saves the chat sender
             message = ""  # Saves each msg
-            sys.stdout.write("\rMessage {}/{}".format(str(i + 1), str(rows)))
+            sys.stdout.write("\rMessage {}/{}".format(str(row.Index + 1), str(rows)))
             sys.stdout.flush()
             # transform chat time in epoch local time
-            time_parse = str(data["Date"][i]) + " " + str(data["Time"][i])
+            time_parse = str(row.Date) + " " + str(row.Time)
             utc_time = time.strptime(time_parse, timeformat)
             dt = time.mktime(utc_time)
             if time_start <= dt <= time_end:
-                sender = str(data["Author"][i])
+                sender = str(row.Author)
                 if operating_system == "ios":
-                    text = getAttachediOS(str(data["Message"][i]))
+                    text = getAttachediOS(str(row.Message))
                 else:
-                    text = getAttachedAndroid(str(data["Message"][i]))
+                    text = getAttachedAndroid(str(row.Message))
 
                 if (
                     "Los mensajes y las llamadas están cifrados de extremo a extremo. Nadie fuera de este chat, ni siquiera WhatsApp, puede leerlos ni escucharlos"
@@ -804,7 +804,7 @@ def messages(
                     )
 
                 report_time = "{} - {}".format(
-                    str(data["Date"][i]), str(data["Time"][i])
+                    str(row.Date), str(row.Time)
                 )
                 if (report_var == "EN") or (report_var == "ES"):
                     if report_name == user:
@@ -869,7 +869,7 @@ def messages(
         except Exception as e:
             print(
                 "\nError showing message details: {}, Message ID {}, Timestamp {}".format(
-                    e, str(i), data["Date"][i] + ", " + data["Time"][i]
+                    e, str(row.Index), str(row.Date) + ", " + str(row.Time)
                 )
             )
 

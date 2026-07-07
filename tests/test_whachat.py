@@ -131,5 +131,51 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(message, "Hello")
 
 
+from unittest import mock
+import libs.whachat as whachat
+
+class TestGetConfigs(unittest.TestCase):
+    @mock.patch('libs.whachat.ConfigParser')
+    @mock.patch('libs.whachat.system_slash')
+    def test_get_configs_success(self, mock_system_slash, mock_config_parser_class):
+        mock_config = mock.MagicMock()
+        mock_config_parser_class.return_value = mock_config
+        mock_system_slash.return_value = "/mock/path/settings.cfg"
+
+        def mock_get(section, key):
+            configs = {
+                "company": "TestCompany",
+                "record": "TestRecord",
+                "unit": "TestUnit",
+                "examiner": "TestExaminer",
+                "notes": "TestNotes"
+            }
+            return configs.get(key)
+
+        mock_config.get.side_effect = mock_get
+
+        whachat.get_configs()
+
+        mock_system_slash.assert_called_once()
+        mock_config.read.assert_called_once_with("/mock/path/settings.cfg")
+
+        self.assertEqual(whachat.company, "TestCompany")
+        self.assertEqual(whachat.record, "TestRecord")
+        self.assertEqual(whachat.unit, "TestUnit")
+        self.assertEqual(whachat.examiner, "TestExaminer")
+        self.assertEqual(whachat.notes, "TestNotes")
+
+    @mock.patch('libs.whachat.ConfigParser')
+    @mock.patch('builtins.print')
+    def test_get_configs_exception(self, mock_print, mock_config_parser_class):
+        mock_config = mock.MagicMock()
+        mock_config_parser_class.return_value = mock_config
+        mock_config.read.side_effect = Exception("File not found")
+
+        whachat.get_configs()
+
+        mock_print.assert_called_with("The 'settings.cfg' file is missing or corrupt!")
+
+
 if __name__ == "__main__":
     unittest.main()

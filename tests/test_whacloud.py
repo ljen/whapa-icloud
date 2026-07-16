@@ -1,11 +1,12 @@
 import unittest
 import os
 import sys
+from unittest.mock import patch
 
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1, derive_file_block
 
 
 class TestHkdfV1(unittest.TestCase):
@@ -38,6 +39,19 @@ class TestHkdfV1(unittest.TestCase):
         for length in [1, 16, 32, 48, 64]:
             out = hkdf_v1(ikm, info, length)
             self.assertEqual(len(out), length)
+
+
+class TestDeriveFileBlock(unittest.TestCase):
+    @patch("libs.whacloud.hkdf_legacy")
+    def test_derive_file_block_arguments(self, mock_hkdf):
+        mock_hkdf.return_value = b"mocked_key"
+        tar_key = b"my_tar_key"
+        entry_id_32 = b"my_entry_id_32"
+
+        result = derive_file_block(tar_key, entry_id_32)
+
+        mock_hkdf.assert_called_once_with(tar_key, entry_id_32, b"\x00", 80)
+        self.assertEqual(result, b"mocked_key")
 
 
 class TestPkcs7Strip(unittest.TestCase):

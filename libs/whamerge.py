@@ -320,7 +320,6 @@ def merge(db_path, db_name):
                 ids_thumb_write_set = set(ids_thumb_write)
 
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []
                 for item in ids_message_read:
                     if item not in ids_message_write_set:
@@ -328,7 +327,6 @@ def merge(db_path, db_name):
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
                     if item not in ids_chatlist_write_set:
@@ -336,7 +334,6 @@ def merge(db_path, db_name):
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
                 ids_quote_insert = []
                 for item in ids_quote_read:
                     if item not in ids_quote_write_set:
@@ -344,7 +341,6 @@ def merge(db_path, db_name):
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
                     if item not in ids_thumb_write_set:
@@ -596,7 +592,6 @@ def merge_win(db_path, db_name):
                 ids_thumb_write_set = set(ids_thumb_write)
 
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []
                 for item in ids_message_read:
                     if item not in ids_message_write_set:
@@ -604,7 +599,6 @@ def merge_win(db_path, db_name):
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
                     if item not in ids_chatlist_write_set:
@@ -612,7 +606,6 @@ def merge_win(db_path, db_name):
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
                 ids_quote_insert = []
                 for item in ids_quote_read:
                     if item not in ids_quote_write_set:
@@ -620,7 +613,6 @@ def merge_win(db_path, db_name):
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
                     if item not in ids_thumb_write_set:

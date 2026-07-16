@@ -1,9 +1,11 @@
 import unittest
+from unittest.mock import patch
 from libs.whachat import (
     startsWithDateTimeAndroid,
     startsWithDateTimeiOS,
     getDataPointiOS,
     getDataPointAndroid,
+    system_slash,
 )
 
 
@@ -129,6 +131,40 @@ class TestGetDataPointAndroid(unittest.TestCase):
         self.assertEqual(time, "10:02")
         self.assertEqual(author, "+34 666 555 444")
         self.assertEqual(message, "Hello")
+
+
+class TestSystemSlash(unittest.TestCase):
+    @patch("sys.platform", "win32")
+    def test_windows_platform_win32(self):
+        self.assertEqual(system_slash("path/to/file"), "path\\to\\file")
+        self.assertEqual(system_slash("path/to/some/dir/"), "path\\to\\some\\dir\\")
+        self.assertEqual(system_slash("path\\to\\file"), "path\\to\\file")
+
+    @patch("sys.platform", "win64")
+    def test_windows_platform_win64(self):
+        self.assertEqual(system_slash("path/to/file"), "path\\to\\file")
+
+    @patch("sys.platform", "cygwin")
+    def test_windows_platform_cygwin(self):
+        self.assertEqual(system_slash("path/to/file"), "path\\to\\file")
+
+    @patch("sys.platform", "linux")
+    def test_non_windows_platform_linux(self):
+        self.assertEqual(system_slash("path\\to\\file"), "path/to/file")
+        self.assertEqual(system_slash("path\\to\\some\\dir\\"), "path/to/some/dir/")
+        self.assertEqual(system_slash("path/to/file"), "path/to/file")
+
+    @patch("sys.platform", "darwin")
+    def test_non_windows_platform_mac(self):
+        self.assertEqual(system_slash("path\\to\\file"), "path/to/file")
+
+    @patch("sys.platform", "win32")
+    def test_mixed_slashes_windows(self):
+        self.assertEqual(system_slash("path/to\\file/test"), "path\\to\\file\\test")
+
+    @patch("sys.platform", "linux")
+    def test_mixed_slashes_linux(self):
+        self.assertEqual(system_slash("path/to\\file/test"), "path/to/file/test")
 
 
 if __name__ == "__main__":

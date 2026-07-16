@@ -176,7 +176,7 @@ def participants(obj):
         group_participants_cache = {}
         try:
             sql_string_all = "SELECT gjid, jid, admin FROM group_participants"
-            sql_consult_all = cursor.execute(sql_string_all)
+            sql_consult_all = cursor.execute(sql_string_all).fetchall()
             for row in sql_consult_all:
                 if row[0] not in group_participants_cache:
                     group_participants_cache[row[0]] = []

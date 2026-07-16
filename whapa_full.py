@@ -4111,11 +4111,9 @@ if __name__ == "__main__":
                 else:
                     local = os.getcwd() + "/"
 
-                params = []
                 if args.text:
-                    sql_string += " AND messages.data LIKE ?"
-                    sql_count += " AND messages.data LIKE ?"
-                    params.append("%" + str(args.text) + "%")
+                    sql_string += " AND messages.data LIKE '%" + str(args.text) + "%'"
+                    sql_count += " AND messages.data LIKE '%" + str(args.text) + "%'"
                 if args.web:
                     sql_string += " AND messages.key_id LIKE '3EB0%'"
                     sql_count += " AND messages.key_id LIKE '3EB0%'"
@@ -4180,6 +4178,7 @@ if __name__ == "__main__":
                         " AND messages.media_wa_type = 0 AND messages.status = 6"
                     )
 
+                params = []
                 if args.user_all:
                     sql_string += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
                     sql_count += " AND (messages.key_remote_jid LIKE ? OR messages.remote_resource LIKE ?)"
@@ -4222,7 +4221,7 @@ if __name__ == "__main__":
                     print("Loading data ...")
 
                     sql_count_group = sql_count.replace("SELECT COUNT(*)", "SELECT messages.key_remote_jid, COUNT(*)", 1) + " GROUP BY messages.key_remote_jid"
-                    cursor.execute(sql_count_group, tuple(params))
+                    cursor.execute(sql_count_group)
                     counts_by_jid = {}
                     while True:
                         chunk = cursor.fetchmany(1000)
@@ -4374,7 +4373,7 @@ if __name__ == "__main__":
                             )
                             report_group, color = participants(arg_user)
 
-                        sql_consult = cursor.execute(sql_string_copy, tuple(params) + ("%" + i + "%",))
+                        sql_consult = cursor.execute(sql_string_copy, ("%" + i + "%",))
                         messages(sql_consult, chat_count, report_html, local)
                         print()
 
@@ -4384,7 +4383,9 @@ if __name__ == "__main__":
                     exit()
 
                 print("Loading data ...")
-                count_params = params.copy()
+                count_params = (
+                    params.copy() if (args.user_all or args.user or args.group) else []
+                )
                 result = cursor.execute(sql_count, tuple(count_params))
                 result = cursor.fetchone()
                 print("Number of messages: {}".format(str(result[0])))

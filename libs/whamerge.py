@@ -337,10 +337,7 @@ def merge(db_path, db_name):
 
                 print("[+] Looking for new replies")
                 ids_quote_write_set = set(ids_quote_write)
-                ids_quote_insert = []
-                for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
-                        ids_quote_insert.append(str(item[0]))
+                ids_quote_insert = [str(item[0]) for item in ids_quote_read if item not in ids_quote_write_set]
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
@@ -613,10 +610,7 @@ def merge_win(db_path, db_name):
 
                 print("[+] Looking for new replies")
                 ids_quote_write_set = set(ids_quote_write)
-                ids_quote_insert = []
-                for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
-                        ids_quote_insert.append(str(item[0]))
+                ids_quote_insert = [str(item[0]) for item in ids_quote_read if item not in ids_quote_write_set]
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")

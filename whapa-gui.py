@@ -55,7 +55,7 @@ MUTED, TEXT, ERROR = "#8696a0", "#e9edef", "#f15c6d"
 
 
 # ===========================================================================
-#  Idiomas de la interfaz
+#  Interface languages
 # ===========================================================================
 LANG = {
  "ES": {
@@ -205,10 +205,10 @@ def tool(name):
     return os.path.join(LIBS, name)
 
 
-# Las herramientas se lanzan desde la raiz del proyecto, no desde libs/: si no,
-# un informe sin ruta de salida acabaria dentro de libs/, que no es sitio.
-# Los modulos de libs/ se importan igual porque cada herramienta anade su propio
-# directorio a sys.path.
+# The tools are launched from the root of the project, not from libs/: otherwise,
+# a report without an output path would end up inside libs/, which is not a site.
+# The libs/ modules are imported the same because each tool adds its own
+# directory to sys.path.
 
 
 class Field:
@@ -247,7 +247,7 @@ class Field:
             if valor:
                 self._widget.insert(0, valor)
             else:
-                # al vaciarlo, la pista debe volver a verse
+                # When you empty it, the track should be visible again
                 self._widget._activate_placeholder()
         except Exception:
             pass
@@ -374,7 +374,7 @@ class SettingsDialog(ctk.CTkToplevel):
         self.ruta = os.path.join(APP_DIR, "cfg", "settings.cfg")
         self.vars = {}
         self._build()
-        self.after(120, self.grab_set)     # tras dibujarse, para no fallar en Linux
+        self.after(120, self.grab_set)     # after drawing, so as not to fail in Linux
 
     def _build(self):
         T = self.master_gui.T
@@ -435,7 +435,7 @@ class SettingsDialog(ctk.CTkToplevel):
             if not cfg.has_section(sec):
                 cfg.add_section(sec)
             valor = var.get()
-            # los datos del informe se guardan entrecomillados, como en el original
+            # The report data is saved in quotes, as in the original
             if sec == "report":
                 valor = '"{}"'.format(valor.replace('"', ""))
             cfg.set(sec, clave, valor)
@@ -453,8 +453,8 @@ class WhapaGUI(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("WhaPa {} - Whatsapp Parser".format(version))
-        # El tamano inicial nunca debe superar la pantalla: en un equipo de
-        # 1024x768 una ventana de 1060x860 se sale y no se ven los botones.
+        # The initial size should never exceed the screen: on a computer
+        # 1024x768 a 1060x860 window pops out and the buttons are not visible.
         try:
             _sw, _sh = self.winfo_screenwidth(), self.winfo_screenheight()
         except Exception:
@@ -468,8 +468,8 @@ class WhapaGUI(ctk.CTk):
         self.lang = "ES"
         self._set_icon()
         self._build()
-        # Se maximiza cuando la ventana ya existe: hacerlo dentro de __init__,
-        # antes de que el gestor de ventanas la dibuje, no surte efecto.
+        # It is maximized when the window already exists: do it inside __init__,
+        # before the window manager draws it, it has no effect.
         self.after(10, self._maximizar)
         self.after(100, self._drain)
 
@@ -505,8 +505,8 @@ class WhapaGUI(ctk.CTk):
             except Exception:
                 continue
 
-        # Ultimo recurso: ocupar la pantalla a mano, dejando hueco para la
-        # barra de tareas.
+        # Last resort: occupy the screen by hand, leaving room for the
+        # taskbar.
         try:
             self.geometry("{}x{}+0+0".format(pantalla_ancho,
                                              max(500, pantalla_alto - 70)))
@@ -530,7 +530,7 @@ class WhapaGUI(ctk.CTk):
                 self._icon_img = tk.PhotoImage(file=png)
                 self.iconphoto(True, self._icon_img)
         except Exception:
-            pass          # el icono es un detalle: nunca debe impedir arrancar
+            pass          # the icon is a detail: it should never prevent starting
 
     def _switch_lang(self):
         self.lang = "EN" if self.lang == "ES" else "ES"
@@ -555,7 +555,7 @@ class WhapaGUI(ctk.CTk):
         ctk.CTkLabel(head, text="   " + self.T("subtitle"),
                      text_color=MUTED, font=ctk.CTkFont(**F12)).pack(side="left")
 
-        # barra de herramientas
+        # toolbar
         for txt, cmd in ((self.T("lang"), self._switch_lang),
                          (self.T("about"), self._about),
                          (self.T("readme"), self._readme),
@@ -607,7 +607,7 @@ class WhapaGUI(ctk.CTk):
 
 
     # ------------------------------------------------------------------
-    #  Barra de herramientas
+    #  Toolbar
     # ------------------------------------------------------------------
     def _install_deps(self):
         """Instala doc/requirements.txt con el pip del interprete en uso."""
@@ -628,8 +628,8 @@ class WhapaGUI(ctk.CTk):
         if not messagebox.askyesno(self.T("deps_title"),
                                    self.T("deps_q") + detalle):
             return
-        # se usa el pip del interprete que esta ejecutando la interfaz, para no
-        # instalar en un Python distinto del que luego ejecuta las herramientas
+        # The pip of the interpreter that is executing the interface is used, so as not to
+        # install in a different Python than the one that then runs the tools
         self._launch_raw([sys.executable, "-m", "pip", "install", "--upgrade",
                           "-r", req])
 
@@ -653,7 +653,7 @@ class WhapaGUI(ctk.CTk):
             "https://github.com/B16f00t/whapa\n\n"
             "Licencia GPL-3.0".format(version))
 
-    # ---------------- pestana WhaPa ----------------
+    # ---------------- WhaPa tab ----------------
     def _tab_whapa(self, tab):
         sc = ctk.CTkScrollableFrame(tab, fg_color="transparent")
         sc.pack(fill="both", expand=True)
@@ -822,7 +822,7 @@ class WhapaGUI(ctk.CTk):
                 a.append("-1")
         self._launch(a)
 
-    # ---------------- pestana WhaCipher ----------------
+    # ---------------- WhaCipher tab ----------------
     def _tab_whacipher(self, tab):
         r = Row(tab)
         self.c_mode = ctk.StringVar(value="Descifrar")
@@ -855,7 +855,7 @@ class WhapaGUI(ctk.CTk):
         a += ["-o", self.c_out.get()]
         self._launch(a)
 
-    # ---------------- pestana WhaMerge ----------------
+    # ---------------- WhaMerge tab ----------------
     def _tab_whamerge(self, tab):
         r = Row(tab)
         self.m_path, self.m_out = Field(), Field()
@@ -874,7 +874,7 @@ class WhapaGUI(ctk.CTk):
             a += ["-o", self.m_out.get()]
         self._launch(a)
 
-    # ---------------- pestana WhaGoDri ----------------
+    # ---------------- WhaGoDri tab ----------------
     def _tab_whagodri(self, tab):
         sc = ctk.CTkScrollableFrame(tab, fg_color="transparent")
         sc.pack(fill="both", expand=True)
@@ -924,7 +924,7 @@ class WhapaGUI(ctk.CTk):
             a += ["-tc", self.g_threads.get()]
         self._launch(a)
 
-    # ---------------- pestana WhaChat ----------------
+    # ---------------- WhaChat tab ----------------
     def _tab_whachat(self, tab):
         r = Row(tab)
         self.h_file, self.h_user = Field(), Field()
@@ -990,7 +990,7 @@ class WhapaGUI(ctk.CTk):
             a.append("-cm")
         self._launch(a)
 
-    # ---------------- pestana WhaCloud ----------------
+    # ---------------- WhaCloud tab ----------------
     def _tab_whacloud(self, tab):
         r = Row(tab)
         r.section(self.T("ic_sec"))
@@ -1024,7 +1024,7 @@ class WhapaGUI(ctk.CTk):
         self._launch(a)
 
     # ------------------------------------------------------------------
-    #  Ejecucion
+    #  Execution
     # ------------------------------------------------------------------
     def _emit(self, msg, tag=None):
         self.q.put((msg, tag))

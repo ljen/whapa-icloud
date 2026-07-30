@@ -107,12 +107,12 @@ def test_filtros_e_informes():
     env = len(report.search(ext, report.Filter(direction="sent")))
     rec = len(report.search(ext, report.Filter(direction="received")))
     sis = len(report.search(ext, report.Filter(direction="system")))
-    # el fixture incluye un mensaje de sistema, que no es ni enviado ni recibido
+    # the fixture includes a system message, which is neither sent nor received
     assert sis == 1 and env + rec + sis == 60
     assert report.Filter().is_empty()
     print("  whareport: motor de filtrado OK")
 
-    # informe interactivo: el HTML inicial no debe crecer con los mensajes
+    # interactive report: initial HTML should not grow with messages
     tam = []
     for n in (50, 5000):
         q = os.path.join(d, "m%d.db" % n); _db_android(q, n)
@@ -121,13 +121,13 @@ def test_filtros_e_informes():
     assert abs(tam[0] - tam[1]) < 2000, "el HTML inicial crece con los mensajes"
     print("  whareport: informe interactivo de tamano constante OK")
 
-    # idiomas
+    # languages
     for lang, marca in (("ES", ">Buscar</button>"), ("EN", ">Search</button>")):
         r = report.build_report(ext, os.path.join(d, "l" + lang), lang=lang)
         assert marca in open(r["path"], encoding="utf-8").read()
     print("  whareport: informe en ES y EN OK")
 
-    # imprimible con criterios documentados
+    # printable with documented criteria
     flt = report.Filter(text="t1", direction="sent")
     out = os.path.join(d, "print.html")
     r = report.build_printable(ext, out, flt=flt, case_ref="REF-1", max_messages=999)
@@ -138,7 +138,7 @@ def test_filtros_e_informes():
     assert r["selected"] == r["messages"]
     print("  whareport: informe imprimible con criterios OK")
 
-    # el informe interactivo respeta el filtro
+    # interactive report respects filter
     r1 = report.build_report(ext, os.path.join(d, "sf"))
     r2 = report.build_report(ext, os.path.join(d, "cf"), flt=report.Filter(raw_types={66}))
     assert r2["pages"] <= r1["pages"]
@@ -190,7 +190,7 @@ def test_adjuntos():
     INSERT INTO message VALUES (1,1,0,'K',1,1705300000000,1,NULL,0);
     INSERT INTO message VALUES (2,1,1,'K',NULL,1705300100000,2,NULL,0);
     INSERT INTO message VALUES (3,1,0,'K',1,1705300200000,1,NULL,0);""")
-    # ruta absoluta del terminal, ruta relativa, y una que no existe
+    # absolute path of the terminal, relative path, and one that does not exist
     con.executemany("INSERT INTO message_media VALUES (?,?,?,?,?,?)", [
         (1, 1, "/storage/emulated/0/WhatsApp/Media/WhatsApp Images/IMG-1.jpg",
          "image/jpeg", 72, None),
@@ -201,23 +201,23 @@ def test_adjuntos():
 
     ext = reader.read(db)
 
-    # sin carpeta: no se localiza nada, pero el informe se genera igual
+    # no folder: nothing is located, but the report is generated the same
     r0 = report.build_report(ext, os.path.join(d, "sin"))
     assert r0["media_found"] == 0
 
-    # con carpeta y copia: 2 de 3 localizados
+    # with folder and copy: 2 of 3 located
     r1 = report.build_report(ext, os.path.join(d, "con"),
                              media_root=wa, copy_media=True)
     assert r1["media_found"] == 2 and r1["media_missing"] == 1, r1
     copiados = os.listdir(os.path.join(d, "con", "media"))
     assert "IMG-1.jpg" in copiados and "AUD-1.wav" in copiados
 
-    # el dato del adjunto viaja en el archivo de datos del informe
+    # the attachment data travels in the report data file
     datos = open(os.path.join(d, "con", "data", "c0000_p0000.js"),
                  encoding="utf-8").read()
     assert "media/IMG-1.jpg" in datos and "media/AUD-1.wav" in datos
 
-    # el imprimible incrusta la miniatura y deja constancia de la ruta original
+    # The printable embeds the thumbnail and records the original route
     out = os.path.join(d, "print.html")
     report.build_printable(ext, out, media_root=wa, copy_media=True,
                            max_messages=99)
@@ -225,7 +225,7 @@ def test_adjuntos():
     assert 'class="thumb"' in cuerpo
     assert "Ruta en la base" in cuerpo and "archivo no localizado" in cuerpo
 
-    # el visor sabe pintar cada tipo
+    # the viewer knows how to paint each type
     assert "function mediaHtml" in report.JS and "<audio controls" in report.JS
     print("  whareport: adjuntos localizados, copiados y enlazados OK")
 
@@ -257,10 +257,10 @@ def test_ubicaciones():
     conubi = [m for m in ext.messages if m.latitude is not None]
     assert len(conubi) == 2
 
-    # filtro por ubicacion
+    # filter by location
     assert len(report.search(ext, report.Filter(only_location=True))) == 2
 
-    # KML valido y con las dos coordenadas
+    # Valid KML and with the two coordinates
     kml = os.path.join(d, "loc.kml")
     n = report.export_kml(report.search(ext, report.Filter(only_location=True)), kml)
     assert n == 2
@@ -269,15 +269,15 @@ def test_ubicaciones():
     marcas = raiz.findall(".//k:Placemark", ns)
     assert len(marcas) == 2
     coords = [m.find(".//k:coordinates", ns).text for m in marcas]
-    assert "-4.42034,36.72016,0" in coords, coords   # KML es lon,lat
+    assert "-4.42034,36.72016,0" in coords, coords   # KML is lon,lat
     assert marcas[0].find(".//k:when", ns) is not None
 
-    # sin ubicaciones no se inventa nada
+    # without locations nothing is invented
     assert report.export_kml(
         report.search(ext, report.Filter(text="sin ubicacion")),
         os.path.join(d, "vacio.kml")) == 0
 
-    # el visor pinta el bloque y NO enlaza imagenes remotas
+    # the viewer paints the block and does NOT link remote images
     r = report.build_report(ext, os.path.join(d, "rep"))
     assert "function locHtml" in report.JS
     assert "openstreetmap.org" in report.JS and "google.com/maps" in report.JS
@@ -301,7 +301,7 @@ def test_whachat_informes():
         "25/8/20, 19:53:01 - Yo: te paso la foto\n"
         "25/8/20, 19:53:15 - Yo: IMG-1.jpg (archivo adjunto)\n"
         "25/8/20, 19:55:10 - Juan Perez: PTT-1.opus (archivo adjunto)\n")
-    # adjuntos junto al chat, como los exporta WhatsApp
+    # attachments next to the chat, as exported by WhatsApp
     import struct, zlib, wave
     raw = b"".join(b"\x00" + bytes((0, 168, 132)) * 4 for _ in range(4))
     def ch(t, x):
@@ -322,12 +322,12 @@ def test_whachat_informes():
     assert len(ext.messages) == 5
     tipos = {m.kind.value for m in ext.messages}
     assert "image" in tipos and "audio" in tipos and "system" in tipos
-    # fechas resueltas aunque la mascara no sea la exacta
+    # dates resolved even if the mask is not exact
     ext2 = whachat.to_extraction(df, "Yo", "%d/%m/%Y %H:%M", "android")
     assert all(m.timestamp for m in ext2.messages), "las fechas deben resolverse igual"
-    # direccion
+    # address
     assert sum(1 for m in ext.messages if m.from_me) == 2
-    # verificacion de origen
+    # verification of origin
     assert len(ext.source_files[0]["sha256"]) == 64
 
     salida = os.path.join(d, "rep")
@@ -339,7 +339,7 @@ def test_whachat_informes():
         assert os.path.exists(r["path"])
         if c != "csv":
             assert r["media_found"] == 2, (c, r)
-    # el informe interactivo es el mismo motor
+    # the interactive report is the same engine
     cuerpo = open(os.path.join(salida, "report", "index.html"), encoding="utf-8").read()
     assert "function runSearch" in cuerpo and "function mediaHtml" in cuerpo
     print("  whachat: mismos informes que whapa OK")
@@ -357,7 +357,7 @@ def test_consola_segura():
 
     orig = sys.stdout
     try:
-        # consola real cp1252: se conserva la codificacion, se reemplaza lo que no cabe
+        # real cp1252 console: the coding is preserved, what does not fit is replaced
         buf = io.BytesIO()
         sys.stdout = FakeTTY(buf, encoding="cp1252", errors="strict")
         whadeps.safe_console()
@@ -366,7 +366,7 @@ def test_consola_segura():
         salida = buf.getvalue().decode("cp1252")
         assert "Bartolo" in salida and "acentos" in salida
 
-        # salida canalizada: UTF-8 completo, emoji incluido
+        # Piped output: Full UTF-8, emoji included
         buf2 = io.BytesIO()
         sys.stdout = io.TextIOWrapper(buf2, encoding="cp1252", errors="strict")
         whadeps.safe_console()
@@ -396,11 +396,11 @@ def test_lid():
     INSERT INTO message VALUES (1,1,0,'K',2,1762844892000,0,'hola',0);""")
     con.commit(); con.close()
 
-    # sin tabla de correspondencia: se marca como LID
+    # no correspondence table: marked as LID
     ext = reader.read(p)
     assert ext.messages[0].sender == "LID:233749350498426", ext.messages[0].sender
 
-    # con tabla: se traduce al telefono
+    # with table: translates to the phone
     con = sqlite3.connect(p)
     con.executescript("""
     CREATE TABLE lid_jid_map(lid_row_id INT, jid_row_id INT);
@@ -435,7 +435,7 @@ def test_nombre_de_grupo():
     grupo = chats["120363000000@g.us"]
     assert grupo.name == "Grupo de trabajo", grupo.name
     assert grupo.is_group
-    # el chat individual no tiene asunto: cae al numero
+    # The individual chat has no subject: it falls to the number
     individual = chats["34600111222@s.whatsapp.net"]
     assert individual.label == "34600111222"
     assert not individual.is_group
@@ -461,7 +461,7 @@ def test_salida_por_defecto():
     INSERT INTO message VALUES (1,1,0,'K',1,1700000000000,0,'hola',0);""")
     con.commit(); con.close()
 
-    # ejecutando desde libs/, el informe debe subir a la raiz
+    # running from libs/, the report should go up to the root
     antes = os.path.exists(os.path.join(libs, "report"))
     r = subprocess.run([sys.executable, os.path.join(libs, "whapa.py"), db,
                         "-m", "-a", "-r", "ES"],
@@ -475,7 +475,7 @@ def test_salida_por_defecto():
     import shutil
     shutil.rmtree(generado, ignore_errors=True)
 
-    # desde una carpeta de trabajo cualquiera, se queda ahi
+    # from any work folder, it stays there
     trabajo = tempfile.mkdtemp()
     r = subprocess.run([sys.executable, os.path.join(libs, "whapa.py"), db,
                         "-m", "-a", "-r", "ES"],
@@ -514,10 +514,10 @@ def test_nombres_de_contacto():
                    wa_name TEXT, given_name TEXT, nickname TEXT,
                    sort_name TEXT, number TEXT, status TEXT)""")
     con.executemany("INSERT INTO wa_contacts VALUES (?,?,?,?,?,?,?,?)", [
-        # en la agenda del telefono
+        # in the phone book
         ("34600111222@s.whatsapp.net", "Juan Perez", None, None, None, None,
          "+34 600 111 222", None),
-        # NO en la agenda: el nombre solo esta en wa_name
+        # NOT in the agenda: the name is only in wa_name
         ("34611222333@s.whatsapp.net", None, "Maria (WhatsApp)", None, None,
          None, "+34611222333", None)])
     con.commit(); con.close()
@@ -525,18 +525,18 @@ def test_nombres_de_contacto():
     ext = reader.read(db, wa_db=wa)
     chats = {c.chat_id: c.label for c in ext.chats()}
 
-    # LID con equivalencia: se resuelve hasta el nombre de la agenda
+    # LID with equivalence: resolves to the address book name
     assert chats["17064475537618@lid"] == "Juan Perez", chats
-    # LID sin equivalencia: se marca, no se hace pasar por telefono
+    # LID without equivalence: it is dialed, it is not impersonated by telephone
     assert chats["92028381708365@lid"] == "LID:92028381708365", chats
-    # nombre solo en wa_name (no esta en la agenda): tambien se muestra
+    # name only in wa_name (not in the phonebook): also shown
     assert chats["34611222333@s.whatsapp.net"] == "Maria (WhatsApp)", chats
 
-    # busqueda por numero aunque el formato no coincida
+    # search by number even if the format does not match
     ct = ext.buscar_contacto("34600111222@s.whatsapp.net")
     assert ct and ct.display_name == "Juan Perez"
 
-    # sin wa.db, no se inventan nombres
+    # without wa.db, no names are invented
     ext2 = reader.read(db)
     chats2 = {c.chat_id: c.label for c in ext2.chats()}
     assert chats2["34611222333@s.whatsapp.net"] == "34611222333"
@@ -575,24 +575,24 @@ def test_remitente_en_grupo():
     assert por_id[1].sender_name == "Paco"
     assert por_id[1].sender == "34616362926", "el numero original no se pierde"
     assert por_id[1].sender_label == "Paco"
-    # sin contacto: se queda el numero, no se inventa nada
+    # no contact: the number stays, nothing is invented
     assert por_id[2].sender_name is None
     assert por_id[2].sender_label == "34699888777"
 
-    # el informe muestra nombre y numero
+    # The report shows name and number
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
     cuerpo = open(out, encoding="utf-8").read()
     assert "Paco (34616362926)" in cuerpo
 
-    # el CSV separa numero y nombre
+    # The CSV separates number and name
     csvp = os.path.join(d, "h.csv")
     report.export_csv(report.search(ext, report.Filter()), csvp)
     lineas = open(csvp, encoding="utf-8-sig").read().splitlines()
     assert "nombre_remitente" in lineas[0]
     assert "Paco" in lineas[1]
 
-    # los tipos sin catalogar no se pierden ni rompen
+    # uncatalogued types are not lost or broken
     desconocidos = [m for m in ext.messages if m.kind is codes.Kind.UNKNOWN]
     assert len(desconocidos) == 1 and desconocidos[0].raw_type == 116
     assert "116" in desconocidos[0].type_desc
@@ -613,30 +613,30 @@ def test_texto_danado():
     INSERT INTO jid VALUES (1,'34600111222@s.whatsapp.net');
     INSERT INTO chat VALUES (1,1,NULL);
     INSERT INTO message VALUES (1,1,0,'K',1,1700000000000,0,'sano con acentos aei',0);""")
-    # emoji cortado a la mitad, guardado como TEXT
+    # emoji cut in half, saved as TEXT
     con.execute("INSERT INTO message(_id,chat_row_id,from_me,key_id,"
                 "sender_jid_row_id,timestamp,message_type,starred) "
                 "VALUES (2,1,0,'K',1,1700000100000,0,0)")
     con.execute("UPDATE message SET text_data = CAST(? AS TEXT) WHERE _id=2",
                 (sqlite3.Binary(b"Todav\xc3\xada le cambio el nombre \xf0\x9f\x98"),))
-    # valor guardado como BLOB en una columna de texto
+    # value saved as BLOB in a text column
     con.execute("INSERT INTO message VALUES (3,1,0,'K',1,1700000200000,0,?,0)",
                 (sqlite3.Binary(b"otro \xff\xfe roto"),))
     con.commit(); con.close()
 
-    ext = reader.read(db)          # no debe lanzar excepcion
+    ext = reader.read(db)          # should not throw exception
     assert len(ext.messages) == 3
     assert ext.damaged_text >= 1, "deberia contar el texto danado"
 
     por_id = {m.row_id: m for m in ext.messages}
-    # lo legible se conserva; solo lo roto se marca
+    # what is legible is preserved; only what is broken is marked
     assert "Todav" in por_id[2].text and "cambio el nombre" in por_id[2].text
     assert "\ufffd" in por_id[2].text
-    # el BLOB llega como texto, no como bytes
+    # the BLOB arrives as text, not bytes
     assert isinstance(por_id[3].text, str)
     assert "otro" in por_id[3].text and "roto" in por_id[3].text
 
-    # y los informes se generan sin problema
+    # and the reports are generated without problem
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
     assert "cambio el nombre" in open(out, encoding="utf-8").read()
@@ -673,23 +673,23 @@ def test_estado_de_lectura():
     ext = reader.read(db)
     por_id = {m.row_id: m for m in ext.messages}
 
-    # el mismo codigo significa cosas distintas segun sea enviado o recibido
+    # The same code means different things depending on whether it is sent or received.
     assert "Leido" in por_id[1].status_desc and por_id[1].leido
     assert "Entregado" in por_id[2].status_desc and not por_id[2].leido
     assert "Recibido" in por_id[3].status_desc
     assert codes.status_description(0, True) != codes.status_description(0, False)
 
-    # en grupo: cuenta cuantos recibieron y cuantos leyeron
+    # in group: count how many received and how many read
     assert por_id[4].delivered_to == 2 and por_id[4].read_by == 1
     assert por_id[4].leido, "si alguien lo leyo, consta como leido"
 
-    # filtros complementarios
+    # complementary filters
     leidos = report.search(ext, report.Filter(only_read=True))
     sin = report.search(ext, report.Filter(only_unread=True))
     assert len(leidos) + len(sin) == len(ext.messages)
     assert not report.Filter(only_read=True).is_empty()
 
-    # aparece en el imprimible y en el CSV
+    # appears in the printable and in the CSV
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
     cuerpo = open(out, encoding="utf-8").read()
@@ -707,7 +707,7 @@ def test_gui_segura():
     fuente = open(gui, encoding="utf-8").read()
     import ast
     arbol = ast.parse(fuente)
-    # Se analiza el arbol, no el texto: la mencion en el comentario no cuenta
+    # The tree is analyzed, not the text: the mention in the comment does not count
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Attribute):
             llamada = "{}.{}".format(

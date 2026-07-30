@@ -45,7 +45,7 @@ UTC = datetime.timezone.utc
 
 
 # ========================================================================
-#  MOTOR DE FILTRADO Y BUSQUEDA
+#  FILTERING AND SEARCH ENGINE
 # ========================================================================
 
 
@@ -83,16 +83,16 @@ class Filter:
     date_from: Optional[int] = None
     date_to: Optional[int] = None
     direction: Optional[str] = None        # 'sent' | 'received' | 'system'
-    kinds: Optional[Set[str]] = None       # valores de codes.Kind
-    raw_types: Optional[Set[int]] = None   # códigos nativos de la plataforma
+    kinds: Optional[Set[str]] = None       # codes.Kind values
+    raw_types: Optional[Set[int]] = None   # native platform codes
     only_deleted: bool = False
     only_starred: bool = False
     only_media: bool = False
     only_forwarded: bool = False
     only_edited: bool = False
     only_location: bool = False
-    only_read: bool = False        # consta que el destinatario lo abrio
-    only_unread: bool = False      # no consta que lo abriera
+    only_read: bool = False        # it is known that the recipient opened it
+    only_unread: bool = False      # there is no evidence that he opened it
 
     _rx: object = field(default=None, repr=False, compare=False)
 
@@ -225,7 +225,7 @@ class Filter:
 
 
 # ===========================================================================
-#  Búsqueda sobre una extracción completa
+#  Search for a complete extraction
 # ===========================================================================
 @dataclass
 class Hit:
@@ -290,7 +290,7 @@ def export_csv(hits: List[Hit], path: str):
     return path
 
 # ========================================================================
-#  RECURSOS DEL VISOR (CSS + JAVASCRIPT)
+#  VIEWER RESOURCES (CSS + JAVASCRIPT)
 # ========================================================================
 
 
@@ -1066,18 +1066,18 @@ function boot(){
 """
 
 # ========================================================================
-#  INFORME INTERACTIVO
+#  INTERACTIVE REPORT
 # ========================================================================
 
 
 
 
-PAGE_SIZE = 500          # mensajes por archivo de datos
+PAGE_SIZE = 500          # messages per data file
 SINGLE_FILE_LIMIT = 20000
 
 
 # ===========================================================================
-#  Serialización compacta
+#  Compact serialization
 # ===========================================================================
 def _flags(m):
     f = 0
@@ -1116,8 +1116,8 @@ def _serialize(m, sender_idx, href=None, maphref=None):
     si = None
     quien = m.sender_name or m.sender
     if quien:
-        # Se guarda "Nombre (numero)" cuando hay nombre: el informe debe permitir
-        # identificar a la persona sin perder el dato original de la base.
+        # "Name (number)" is saved when there is a name: the report must allow
+        # identify the person without losing the original database data.
         if m.sender_name and m.sender and m.sender_name != m.sender:
             quien = "{} ({})".format(m.sender_name, m.sender)
         si = sender_idx.setdefault(quien, len(sender_idx))
@@ -1135,10 +1135,10 @@ def _serialize(m, sender_idx, href=None, maphref=None):
         m.longitude,
         _quote_text(m),
         _reactions_text(m),
-        href,                       # 13: URL del adjunto, si se ha localizado
-        maphref,                    # 14: URL del mapa local, si se ha descargado
-        m.status_desc or None,      # 15: estado de entrega/lectura
-        1 if m.leido else 0,        # 16: consta que se abrio
+        href,                       # 13: URL of the attachment, if located
+        maphref,                    # 14: Local map URL, if downloaded
+        m.status_desc or None,      # 15: delivery/read status
+        1 if m.leido else 0,        # 16: it appears that it was opened
     ]
 
 
@@ -1151,7 +1151,7 @@ def _type_table(platform):
 
 
 # ===========================================================================
-#  Cabecera / estadísticas
+#  Header / statistics
 # ===========================================================================
 def _stats_html(stats, extraction, platform):
     rows = []
@@ -1173,7 +1173,7 @@ def _stats_html(stats, extraction, platform):
                                                           html.escape(str(v)))
                  for k, v in rows)
 
-    # cadena de custodia
+    # chain of custody
     t2 = ""
     if extraction.source_files:
         t2 = ("<h3>Origen y verificación</h3><table>"
@@ -1196,7 +1196,7 @@ def _stats_html(stats, extraction, platform):
             "<h3>Mensajes por año</h3>{}").format(t1, t2, pills, years)
 
 
-# Etiquetas del visor en los dos idiomas que admite whapa (-r EN|ES)
+# Viewer labels in the two languages ​​supported by whapa (-r EN|ES)
 _T = {
     "ES": {"filter_chats": "Filtrar chats…", "search_chat": "Buscar en este chat (Intro)",
            "search": "Buscar", "filters": "Filtros", "print_chat": "Imprimir chat",
@@ -1337,7 +1337,7 @@ function showStats(){{
 
 
 # ===========================================================================
-#  Generación
+#  Generation
 # ===========================================================================
 def _tvars(lang):
     """Traducciones del shell como variables t_<clave> para format()."""
@@ -1437,7 +1437,7 @@ def build_report(extraction, out_path, title="Informe forense WhatsApp",
                 "media_found": resolver.found, "media_missing": resolver.missing,
                 "maps_ok": mapas.ok, "maps_failed": mapas.failed}
 
-    # --- modo carpeta ---
+    # --- folder mode ---
     os.makedirs(out_path, exist_ok=True)
     data_dir = os.path.join(out_path, "data")
     os.makedirs(data_dir, exist_ok=True)
@@ -1465,7 +1465,7 @@ def build_report(extraction, out_path, title="Informe forense WhatsApp",
             "maps_ok": mapas.ok, "maps_failed": mapas.failed}
 
 # ========================================================================
-#  INFORME IMPRIMIBLE
+#  PRINTABLE REPORT
 # ========================================================================
 
 
@@ -1688,7 +1688,7 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
         chats = [c for c in chats
                  if f in (c.label or "").lower() or f in (c.chat_id or "").lower()]
 
-    # Primero se selecciona, para poder anunciar el alcance en la portada
+    # It is selected first, to be able to announce the scope on the cover
     seleccion = []
     total_sel = 0
     for c in chats:
@@ -1756,19 +1756,19 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
 
 
 # ===========================================================================
-#  RESOLUCION DE ARCHIVOS ADJUNTOS
+#  RESOLUTION OF ATTACHED FILES
 # ===========================================================================
-#  La base de datos guarda RUTAS, no archivos. Si el usuario ha copiado la
-#  carpeta WhatsApp del terminal, aqui se localiza cada archivo y se enlaza
-#  desde el informe, para que las imagenes se vean y los audios y videos se
-#  reproduzcan sin salir del HTML, como hacia la version anterior.
+#  The database stores ROUTES, not files. If the user has copied the
+#  WhatsApp folder on the terminal, each file is located here and linked
+#  from the report, so that the images are seen and the audios and videos are
+#  reproduce without leaving the HTML, as in the previous version.
 #
-#  Las rutas guardadas varian mucho:
-#     Android antiguo : /storage/emulated/0/WhatsApp/Media/WhatsApp Images/IMG-x.jpg
-#     Android actual  : Media/WhatsApp Images/IMG-x.jpg
-#     iOS             : Message/Media/<jid>/7/A/AUDIO-x.opus
-#  Por eso se prueba primero por ruta relativa y, si falla, por nombre de
-#  archivo contra un indice de toda la carpeta.
+#  Saved routes vary greatly:
+#     Old Android: /storage/emulated/0/WhatsApp/Media/WhatsApp Images/IMG-x.jpg
+#     Current Android: Media/WhatsApp Images/IMG-x.jpg
+#     iOS : Message/Media/<jid>/7/A/AUDIO-x.opus
+#  That is why it is tested first by relative path and, if it fails, by name of
+#  file against an index of the entire folder.
 
 MEDIA_EXT = {
     "image": {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"},
@@ -1808,7 +1808,7 @@ class MediaResolver:
         if not stored_path or not self.root:
             return None
         p = str(stored_path).replace("\\", "/")
-        # 1) por ruta relativa, cortando en Media/ o Message/
+        # 1) by relative path, cutting at Media/ or Message/
         for marca in ("/Media/", "Media/", "/Message/", "Message/"):
             i = p.find(marca)
             if i >= 0:
@@ -1818,10 +1818,10 @@ class MediaResolver:
                     if os.path.isfile(cand):
                         return cand
                 break
-        # 2) tal cual, por si es una ruta ya valida en este equipo
+        # 2) as is, in case it is a route already valid on this device
         if os.path.isfile(p):
             return p
-        # 3) por nombre de archivo
+        # 3) by file name
         return self.index.get(os.path.basename(p).lower())
 
     def resolve(self, stored_path, out_dir):
@@ -1841,7 +1841,7 @@ class MediaResolver:
             destino = os.path.join(destino_dir, nombre)
             if real not in self._copied:
                 os.makedirs(destino_dir, exist_ok=True)
-                # evitar pisar archivos distintos con el mismo nombre
+                # avoid stepping on different files with the same name
                 n = 1
                 base, ext = os.path.splitext(nombre)
                 while os.path.exists(destino) and self._copied.get(destino) != real:
@@ -1858,22 +1858,22 @@ class MediaResolver:
             else:
                 destino = self._copied[real]
             return "{}/{}".format(self.copy_to, os.path.basename(destino))
-        # enlace relativo desde el informe hasta el archivo original
+        # relative link from report to original file
         try:
             return os.path.relpath(real, out_dir).replace("\\", "/")
-        except ValueError:   # unidades distintas en Windows
+        except ValueError:   # different drives in Windows
             return "file:///" + real.replace("\\", "/")
 
 
 # ===========================================================================
-#  MAPAS Y EXPORTACION DE UBICACIONES
+#  MAPS AND LOCATION EXPORT
 # ===========================================================================
-#  Un informe forense no deberia pedirle un mapa a un servidor ajeno cada vez
-#  que alguien lo abre: filtraria las coordenadas del caso a un tercero y
-#  dejaria de funcionar sin conexion. Por eso el mapa NO se enlaza en remoto.
+#  A forensic report should not ask a foreign server for a map every time
+#  that someone opens it: it would leak the coordinates of the case to a third party and
+#  It would stop working offline. That is why the map is NOT linked remotely.
 #
-#  Con la opcion -gm se descarga una vez, al generar el informe, y se guarda
-#  dentro de la carpeta. A partir de ahi el informe es autonomo.
+#  With the -gm option it is downloaded once, when generating the report, and saved
+#  inside the folder. From there the report is autonomous.
 
 STATIC_MAP_URL = ("https://staticmap.openstreetmap.de/staticmap.php"
                   "?center={lat},{lon}&zoom={zoom}&size={size}"

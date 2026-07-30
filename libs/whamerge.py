@@ -15,7 +15,7 @@ import os
 import sys
 
 
-# Define global variable
+# Defines global variable
 # New Table message
 message_columns = [
     '_id', 'chat_row_id','from_me','key_id','sender_jid_row_id','status','broadcast','recipient_count','participant_hash',

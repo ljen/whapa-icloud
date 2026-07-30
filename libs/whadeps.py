@@ -26,7 +26,7 @@ import sys
 import importlib
 import importlib.util
 
-# modulo que se importa -> paquete que hay que instalar con pip
+# module that is imported -> package that must be installed with pip
 PIP_NAME = {
     "Crypto": "pycryptodome",
     "Cryptodome": "pycryptodomex",
@@ -66,8 +66,8 @@ def require(*modulos, tool=None):
         try:
             importlib.import_module(m)
         except ImportError as e:
-            # Si el modulo esta pero falla al cargarse, lo que falta es lo que
-            # el importa. Se anota eso y no el modulo en si.
+            # If the module is there but fails to load, what is missing is what
+            # He matters. That is noted and not the module itself.
             interno = getattr(e, "name", None)
             if interno and interno != m:
                 if interno not in faltan:
@@ -132,4 +132,4 @@ def safe_console():
             else:
                 flujo.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
-            pass          # flujos que no admiten reconfigure: se deja como esta
+            pass          # flows that do not support reconfigure: left as is

@@ -57,7 +57,7 @@ class Kind(str, Enum):
     UNKNOWN = "unknown"
 
 
-# Etiquetas legibles del vocabulario canónico (para estadísticas del informe)
+# Readable canonical vocabulary labels (for report statistics)
 KIND_LABEL = {
     Kind.TEXT: "Texto", Kind.IMAGE: "Imagen", Kind.AUDIO: "Audio/nota de voz",
     Kind.VIDEO: "Vídeo", Kind.CONTACT: "Contacto", Kind.LOCATION: "Ubicación",
@@ -75,7 +75,7 @@ KIND_LABEL = {
 }
 
 # ---------------------------------------------------------------------------
-# Android moderno — tabla `message`, campo `message_type`   (informe 4.6.17)
+# Modern Android — table `message`, field `message_type` (report 4.6.17)
 # ---------------------------------------------------------------------------
 ANDROID_MESSAGE_TYPE = {
     0: (Kind.TEXT, "Mensaje de texto y/o emoji"),
@@ -108,7 +108,7 @@ ANDROID_MESSAGE_TYPE = {
     112: (Kind.ADVANCED_PRIVACY, "Privacidad avanzada del chat activada/desactivada"),
 }
 
-# Android legacy — tabla `messages`, campo `media_wa_type`
+# Android legacy — table `messages`, field `media_wa_type`
 ANDROID_MEDIA_WA_TYPE = {
     0: (Kind.TEXT, "Mensaje de texto"), 1: (Kind.IMAGE, "Imagen"),
     2: (Kind.AUDIO, "Audio o nota de voz"), 3: (Kind.VIDEO, "Vídeo"),
@@ -123,7 +123,7 @@ ANDROID_MEDIA_WA_TYPE = {
 }
 
 # ---------------------------------------------------------------------------
-# iOS — tabla `ZWAMESSAGE`, campo `ZMESSAGETYPE`   (informe 5.3.8)
+# iOS — table `ZWAMESSAGE`, field `ZMESSAGETYPE` (report 5.3.8)
 # ---------------------------------------------------------------------------
 IOS_ZMESSAGETYPE = {
     0: (Kind.TEXT, "Mensaje de texto"), 1: (Kind.IMAGE, "Imagen"),
@@ -151,7 +151,7 @@ IOS_ZMESSAGETYPE = {
 }
 
 # ---------------------------------------------------------------------------
-# Android — `message_add_on.message_add_on_type`   (informe 4.6.18)
+# Android — `message_add_on.message_add_on_type` (report 4.6.18)
 # ---------------------------------------------------------------------------
 ADD_ON_TYPE = {
     56: "Reacción a un mensaje",
@@ -163,7 +163,7 @@ ADD_ON_TYPE = {
 }
 
 # ---------------------------------------------------------------------------
-# Android — `message_system.action_type`   (informe 4.6.45)
+# Android — `message_system.action_type` (report 4.6.45)
 # ---------------------------------------------------------------------------
 SYSTEM_ACTION_TYPE = {
     2: "Creación de un grupo por el usuario",
@@ -203,7 +203,7 @@ SYSTEM_ACTION_TYPE = {
 }
 
 # ---------------------------------------------------------------------------
-# Android — `call_log`   (informe 4.6.4)
+# Android — `call_log` (report 4.6.4)
 # ---------------------------------------------------------------------------
 CALL_RESULT = {
     2: "Llamada sin contestar",
@@ -218,11 +218,11 @@ CALL_TYPE = {
 }
 
 # ---------------------------------------------------------------------------
-# Android - `message.status`   (informe 4.6.17 y 8.3.1)
+# Android - `message.status` (report 4.6.17 and 8.3.1)
 #
-# El mismo numero significa cosas distintas segun el mensaje sea enviado o
-# recibido: el 0, por ejemplo, es "no ha salido del telefono" en uno y
-# "recibido en el dispositivo" en el otro. Por eso se consultan por separado.
+# The same number means different things depending on the message it is sent or
+# received: 0, for example, is "has not left the phone" in one and
+# "received on device" on the other. That is why they are consulted separately.
 # ---------------------------------------------------------------------------
 STATUS_SENT = {
     0: "Enviado, aun no ha salido del telefono",
@@ -257,7 +257,7 @@ def status_description(status, from_me):
     return tabla.get(status, "Estado sin catalogar (codigo {})".format(status))
 
 
-# Estados que acreditan que el destinatario abrio el mensaje
+# States that prove that the recipient opened the message
 STATUS_LEIDO = {8, 13}
 
 
@@ -277,7 +277,7 @@ def status_leido(status, from_me):
 
 
 # ---------------------------------------------------------------------------
-# Plataformas
+# Platforms
 # ---------------------------------------------------------------------------
 ANDROID = "android"
 ANDROID_LEGACY = "android_legacy"

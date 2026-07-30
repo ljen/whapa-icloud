@@ -49,7 +49,7 @@ class TestPkcs7Strip(unittest.TestCase):
             self.assertEqual(_pkcs7_strip(padded_data), base_data)
 
     def test_invalid_padding_value(self):
-        # Padding values must be between 1 and 16
+        # Padding values ​​must be between 1 and 16
         base_data = b"hello_world"
 
         # Padding value 0

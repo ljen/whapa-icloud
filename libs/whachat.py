@@ -27,7 +27,7 @@ import shutil
 import random
 
 
-# Define global variable
+# Defines global variable
 arg_user = ""
 message = ""
 report_var = "None"
@@ -65,7 +65,7 @@ def help():
 def report(obj, html, local):
     """ Function that makes the report """
 
-    # Copia los estilos
+    # Copy the styles
     try:
         os.makedirs(local + "cfg", exist_ok=True)
         shutil.copy("./cfg/chat.css", local + "cfg/chat.css")
@@ -242,16 +242,16 @@ background-color: #cdcdcd;
 
 
 # ===========================================================================
-#  PUENTE AL MOTOR DE INFORMES COMUN
+#  BRIDGE TO COMMON REPORTING ENGINE
 # ===========================================================================
-#  Un chat exportado no tiene base de datos, pero si tiene lo esencial: quien,
-#  cuando y que. Aqui se traduce el DataFrame al mismo modelo que usa whapa.py,
-#  para que los informes salgan identicos: visor interactivo, imprimible,
-#  exportacion a CSV y a KML, y los mismos filtros.
+#  An exported chat does not have a database, but it does have the essentials: who,
+#  when and what. Here the DataFrame is translated to the same model that whapa.py uses,
+#  so that the reports come out identical: interactive, printable viewer,
+#  export to CSV and KML, and the same filters.
 #
-#  Lo que un chat exportado NO trae, y por tanto no aparece: identificadores de
-#  mensaje, mensajes borrados, reacciones, citas ni coordenadas. El informe lo
-#  refleja tal cual en vez de inventarlo.
+#  What an exported chat DOES NOT bring, and therefore does not appear: identifiers of
+#  message, deleted messages, reactions, quotes or coordinates. The report
+#  reflects as it is instead of inventing it.
 
 ADJUNTO_RX = re.compile(
     r"<(?:attached|adjunto):\s*([^>]+)>"          # iOS
@@ -315,9 +315,9 @@ def to_extraction(data, user, timeformat, operating_system, chat_name=None,
         autor = str(data["Author"][i]) if data["Author"][i] is not None else ""
         texto = str(data["Message"][i])
 
-        # Fecha. WhatsApp exporta con formatos distintos segun idioma, region
-        # y version, asi que se prueba el indicado y despues los habituales:
-        # si falla, el mensaje se queda sin fecha, pero NO se pierde.
+        # Date. WhatsApp exports with different formats depending on language, region
+        # and version, so try the indicated one and then the usual ones:
+        # if it fails, the message is left undated, but NOT lost.
         ts = _fecha_a_epoch(data["Date"][i], data["Time"][i], timeformat)
 
         ruta = None
@@ -419,7 +419,7 @@ def startsWithDateTimeiOS(s):
 
 
 def startsWithDateTimeAndroid(s):
-    # pattern = "^([0-9]*/[0-9]*/[0-9]*\W*[0-9]*.[0-9]*.[0-9]*)-"  # 24/5/18 14:25 -
+    # pattern = "^([0-9]*/[0-9]*/[0-9]*\W*[0-9]*.[0-9]*.[0-9]*)-" # 5/24/18 2:25 PM -
     pattern = r"^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -" # 24.07.21, 10:15 -
     result = re.match(pattern, s)
     if result:
@@ -444,38 +444,38 @@ def startsWithAuthor(s):
 
 
 def getDataPointiOS(line):
-    # IOs - line = [25/8/20, 10:02:14] Jordi Subinspector Tecnologicos: Por qué no vieron los maniquiey
-    splitLine = line.split('] ', 1)  # splitLine = '[25/8/20, 10:02:14', 'Jordi Subinspector Tecnologicos: Por qué no vieron los maniquiey']
-    dateTime = splitLine[0].replace("[", "")  # dateTime = '25/8/20, 10:02:14'
+    # IOs - line = [8/25/20, 10:02:14] Jordi Technological Subinspector: Why didn't you see the mannequins
+    splitLine = line.split('] ', 1)  # splitLine = '[8/25/20, 10:02:14', 'Jordi Subinspector Tecnologicos: Why didn't you see the mannequins']
+    dateTime = splitLine[0].replace("[", "")  # dateTime = '8/25/20, 10:02:14'
     try:
-        date, time = dateTime.split(', ')  # date = '25/8/20'; time = '10:02:14' # English mobile
+        date, time = dateTime.split(', ')  # date = '8/25/20'; time = '10:02:14' # English mobile
     except:
-        date, time = dateTime.split(' ')  # date = '25/8/20'; time = '10:02:14' # Spanish mobile
+        date, time = dateTime.split(' ')  # date = '8/25/20'; time = '10:02:14' # Spanish mobile
 
-    message = ' '.join(splitLine[1:])  # message = 'Jordi Subinspector Tecnologicos: Por qué no vieron los maniquiey'
+    message = ' '.join(splitLine[1:])  # message = 'Jordi Technological Subinspector: Why didn't you see the mannequins'
     if startsWithAuthor(message):  # True
-        splitMessage = message.split(': ', 1)  # splitMessage = ['Jordi Subinspector Tecnologicos', 'Por qué no vieron los maniquiey']
-        author = splitMessage[0]  # author = 'Jordi Subinspector Tecnologicos'
-        message = ' '.join(splitMessage[1:])  # message = 'Por qué no vieron los maniquiey'
+        splitMessage = message.split(': ', 1)  # splitMessage = ['Jordi Subinspector Tecnologicos', 'Why didn't you see the mannequins']
+        author = splitMessage[0]  # author = 'Jordi Technological Subinspector'
+        message = ' '.join(splitMessage[1:])  # message = 'Why didn't you see the mannequins'
     else:
         author = None
     return date, time, author, message
 
 
 def getDataPointAndroid(line):
-    # Android - line = 23/5/18 15:24 - Sergio F: No se tío no le preguntao al final
-    splitLine = line.split(' - ')  # splitLine = ['23/5/18 15:24', 'Sergio F: No se tío no le preguntao al final']
-    dateTime = splitLine[0]  # dateTime = '23/5/18 15:24'                       / 24.07.21, 10:15
+    # Android - line = 5/23/18 15:24 - Sergio F: I don't know, man, don't ask him at the end
+    splitLine = line.split(' - ')  # splitLine = ['5/23/18 15:24', 'Sergio F: I don't know, man, don't ask him at the end']
+    dateTime = splitLine[0]  # dateTime = '23/5/18 15:24' / 24.07.21, 10:15
     try:
-        date, time = dateTime.split(', ')  # date = '23/5/18'; time = '15:24' #  Unknow mobile
+        date, time = dateTime.split(', ')  # date = '5/23/18'; time = '15:24' # Unknown mobile
     except:
-        date, time = dateTime.split(' ')  # date = '23/5/18'; time = '15:24' # English mobile
+        date, time = dateTime.split(' ')  # date = '5/23/18'; time = '15:24' # English mobile
 
-    message = ' '.join(splitLine[1:])  # message = 'Sergio F: No se tío no le preguntao al final'
+    message = ' '.join(splitLine[1:])  # message = 'Sergio F: I don't know, man, don't ask him at the end'
     if startsWithAuthor(message):  # True
-        splitMessage = message.split(': ')  # splitMessage = ['Sergio F', 'No se tío no le preguntao al final']
+        splitMessage = message.split(': ')  # splitMessage = ['Sergio F', 'I don't know, man, don't ask him at the end']
         author = splitMessage[0]  # author = 'Sergio F'
-        message = ' '.join(splitMessage[1:])  # message = 'No se tío no le preguntao al final'
+        message = ' '.join(splitMessage[1:])  # message = 'I don't know, man, I didn't ask him at the end'
     else:
         author = None
     return date, time, author, message
@@ -526,7 +526,7 @@ def getDataFrame(conversationPath, operating_system):
 
 
 def getAttachediOS(message):
-    pattern = ".*<attached: (.*)>|.*<adjunto: (.*)>"    #.*<adjunto: (.*)>
+    pattern = ".*<attached: (.*)>|.*<adjunto: (.*)>"    #.*<attachment: (.*)>
     result = re.match(pattern, message)
     if result:
         file = result.group(1)
@@ -554,7 +554,7 @@ def getAttachediOS(message):
         else:
             fileName, fileExtension = os.path.splitext(file)
             if fileExtension == ".vcf":
-                # Parsear vcf
+                # Parse vcf
                 message = file + "</br><a href=\"" + file + "\" target=\"_blank\"> <IMG SRC='./cfg/vcard_icon.png' width=\"100\" height=\"100\"/></a>"
             elif fileExtension == ".pdf":
                 file_filter = (result.group(0).split('<attached')[0])
@@ -614,7 +614,7 @@ def getAttachedAndroid(message):
         else:
             fileName, fileExtension = os.path.splitext(file)
             if fileExtension == ".vcf":
-                # Parsear vcf
+                # Parse vcf
                 message = file + "</br><a href=\"" + file + "\" target=\"_blank\"> <IMG SRC='./cfg/vcard_icon.png' width=\"100\" height=\"100\"/></a>"
             elif fileExtension == ".pdf":
                 file_filter = (result.group(0).split('<attached')[0])
@@ -657,7 +657,7 @@ def messages(data, user, recipient, report_html, local, time_start, time_end, ti
             message = ""  # Saves each msg
             sys.stdout.write("\rMessage {}/{}".format(str(i+1), str(rows)))
             sys.stdout.flush()
-            # transform chat time in epoch local time
+            # transform chat time into epoch local time
             time_parse = str(data['Date'][i]) + " " + str(data['Time'][i])
             utc_time = time.strptime(time_parse, timeformat)
             dt = time.mktime(utc_time)
@@ -859,9 +859,9 @@ if __name__ == "__main__":
             print(Fore.RED + "--------------------------------------------------------------------------------" + Fore.RESET)
             print(Fore.CYAN + "CHAT " + arg_user + Fore.RESET)
             if args.report or args.print_report or args.csv:
-                # Mismo motor de informes que whapa.py
-                # Sin -o, el informe va junto al chat analizado, que es donde
-                # el usuario lo espera. Nunca dentro de libs/.
+                # Same reporting engine as whapa.py
+                # Without -o, the report goes next to the analyzed chat, which is where
+                # the user expects it. Never inside libs/.
                 salida = args.output or os.path.join(
                     os.path.dirname(os.path.abspath(conversationPath)),
                     "report_whachat")

@@ -72,7 +72,7 @@ def help():
 
 
 # ===========================================================================
-#  Lector protobuf mínimo (solo lo necesario para la cabecera del backup)
+#  Minimal protobuf reader (only what is necessary for the backup header)
 # ===========================================================================
 def _read_varint(buf, pos):
     """Lee un varint de protobuf. Devuelve (valor, nueva_pos)."""
@@ -100,7 +100,7 @@ def _iter_fields(buf):
         if wire == 0:            # varint
             val, pos = _read_varint(buf, pos)
             yield field_no, wire, val
-        elif wire == 2:          # length-delimited (bytes / submensaje)
+        elif wire == 2:          # length-delimited (bytes/submessage)
             length, pos = _read_varint(buf, pos)
             val = buf[pos:pos + length]
             pos += length
@@ -126,7 +126,7 @@ def parse_header(db_data):
     """
     protobuf_size = db_data[0]
     pos = 1
-    # Byte opcional 0x01 = presencia de la tabla de features (solo msgstore)
+    # Optional byte 0x01 = presence of features table (msgstore only)
     if len(db_data) > 1 and db_data[1] == 0x01:
         pos = 2
     protobuf_raw = db_data[pos:pos + protobuf_size]
@@ -151,7 +151,7 @@ def parse_header(db_data):
 
 
 # ===========================================================================
-#  Derivación de clave crypt15  (idéntico a wa-crypt-tools encryptionloop)
+#  crypt15 key derivation (identical to wa-crypt-tools encryptionloop)
 # ===========================================================================
 def _encryption_loop(first_iteration_data, message, output_bytes=32,
                      privateseed=b"\x00" * 32):
@@ -176,7 +176,7 @@ def derive_key(root_key):
 
 
 # ===========================================================================
-#  Carga de la clave
+#  Key upload
 # ===========================================================================
 def load_key(key_source):
     """Carga una clave desde una ruta de archivo o una cadena hex.
@@ -185,7 +185,7 @@ def load_key(key_source):
       - es_crypt15_root=True  -> raw_key es la clave RAÍZ crypt15 (32 B)
       - es_crypt15_root=False -> raw_key es la clave AES directa (crypt12/14)
     """
-    # ¿Cadena hexadecimal de 64 caracteres? -> clave raíz crypt15
+    # 64 character hexadecimal string? -> crypt15 root key
     if isinstance(key_source, str) and len(key_source.strip()) == 64:
         try:
             return bytes.fromhex(key_source.strip()), True
@@ -199,19 +199,19 @@ def load_key(key_source):
         key_data = fh.read()
 
     if len(key_data) == 158:
-        # Archivo .key clásico crypt12/14: la clave AES está en [126:158]
+        # Classic crypt12/14 .key file: AES key is at [126:158]
         return key_data[126:158], False
     if len(key_data) == 32:
-        # Clave raíz crypt15 en binario
+        # crypt15 root key in binary
         return key_data, True
-    # encrypted_backup.key (objeto Java serializado): la raíz son los 32 B finales
+    # encrypted_backup.key (serialized Java object): root is the final 32 B
     if len(key_data) > 32:
         return key_data[-32:], True
     raise ValueError("Formato de clave no reconocido ({} bytes)".format(len(key_data)))
 
 
 # ===========================================================================
-#  Descifrado
+#  Decoded
 # ===========================================================================
 def _maybe_decompress(plaintext):
     """Descomprime zlib si procede; si no está comprimido, devuelve tal cual."""
@@ -220,7 +220,7 @@ def _maybe_decompress(plaintext):
             return zlib.decompress(plaintext)
         except zlib.error:
             pass
-    # Un SQLite empieza por "SQLite format 3\x00"
+    # An SQLite starts with "SQLite format 3\x00"
     if plaintext[:15] == b"SQLite format 3":
         return plaintext
     try:
@@ -240,7 +240,7 @@ def decrypt(db_file, key_source, output):
     ext = os.path.splitext(db_file)[1].lower()
     raw_key, is_root = load_key(key_source)
 
-    # --- crypt12: cabecera fija de 67 bytes, cola de 20 bytes ---
+    # --- crypt12: fixed header 67 bytes, tail 20 bytes ---
     if ext == ".crypt12":
         iv = db_data[51:67]
         data = db_data[67:-20]
@@ -250,15 +250,15 @@ def decrypt(db_file, key_source, output):
             fh.write(plain)
         return True
 
-    # --- crypt14 / crypt15: cabecera protobuf ---
+    # --- crypt14 / crypt15: protobuf header ---
     header = parse_header(db_data)
     iv = header["iv"]
     encrypted = db_data[header["header_len"]:]
 
     if header["version"] == "crypt15":
         aes_key = derive_key(raw_key) if is_root else raw_key
-        # crypt15: los últimos 16 B son checksum md5(file) y 16 antes el tag GCM
-        # Basta con quitar los 32 bytes finales y descifrar en modo GCM sin verificar.
+        # crypt15: the last 16 B are checksum md5(file) and 16 before the GCM tag
+        # Simply remove the final 32 bytes and decrypt in unverified GCM mode.
         encrypted = encrypted[:-32] if len(encrypted) > 32 else encrypted
         aes = AES.new(aes_key, AES.MODE_GCM, nonce=iv)
     else:  # crypt14
@@ -292,7 +292,7 @@ def decrypt_path(path, key_source, out_dir):
 
 
 # ===========================================================================
-#  Cifrado crypt15
+#  crypt15 encryption
 # ===========================================================================
 def _write_varint(value):
     out = bytearray()
@@ -308,13 +308,13 @@ def _write_varint(value):
 
 def build_crypt15_header(iv, app_version="2.24.0.0", jid_suffix="00"):
     """Cabecera protobuf crypt15 mínima válida (mensaje BackupPrefix)."""
-    c15 = b"\x0a" + _write_varint(len(iv)) + iv            # C15_IV.IV = campo 1
+    c15 = b"\x0a" + _write_varint(len(iv)) + iv            # C15_IV.IV = field 1
     av, js = app_version.encode(), jid_suffix.encode()
     info = (b"\x0a" + _write_varint(len(av)) + av +        # app_version = 1
-            b"\x1a" + _write_varint(len(js)) + js)         # jidSuffix   = 3
+            b"\x1a" + _write_varint(len(js)) + js)         # jidSuffix = 3
     prefix = (b"\x08\x01" +                               # key_type = 1 (E2E)
-              b"\x1a" + _write_varint(len(c15)) + c15 +    # c15_iv   = 3
-              b"\x22" + _write_varint(len(info)) + info)   # info     = 4
+              b"\x1a" + _write_varint(len(c15)) + c15 +    # c15_iv = 3
+              b"\x22" + _write_varint(len(info)) + info)   # info = 4
     return bytes([len(prefix)]) + prefix
 
 
@@ -340,7 +340,7 @@ def encrypt(db_file, key_source, output, iv=None):
 
 
 # ===========================================================================
-#  Linea de ordenes
+#  order line
 # ===========================================================================
 def main():
     parser = argparse.ArgumentParser(

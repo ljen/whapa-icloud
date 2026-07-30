@@ -16,7 +16,7 @@ import argparse
 import click
 import time
 
-# Define global variable
+# Defines global variable
 exitFlag = 0
 queueLock = threading.Lock()
 workQueue = queue.Queue(9999999)

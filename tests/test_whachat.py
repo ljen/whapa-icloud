@@ -49,9 +49,9 @@ class TestWhachat(unittest.TestCase):
         self.assertFalse(startsWithDateTimeiOS("[a/b/c, 19:52:23] Jordi: Hello"))
 
     def test_startsWithDateTimeiOS_edge_cases(self):
-        # Empty string
+        # empty string
         self.assertFalse(startsWithDateTimeiOS(""))
-        # Only brackets
+        # Only braces
         self.assertFalse(startsWithDateTimeiOS("[]"))
         # Multiple brackets
         self.assertTrue(startsWithDateTimeiOS("[25/8/20, 19:52:23] [Jordi]: Hello"))

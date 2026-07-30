@@ -37,7 +37,7 @@ COREDATA_EPOCH_OFFSET = 978307200   # Core Data (1/1/2001) -> Unix (1/1/1970)
 
 
 # ===========================================================================
-#  MODELO DE DATOS  (común a Android e iOS)
+#  DATA MODEL (common to Android and iOS)
 # ===========================================================================
 def texto_seguro(valor):
     """Convierte a texto lo que venga de la base sin romperse.
@@ -72,8 +72,8 @@ class Message:
     row_id: int
     chat_id: str
     from_me: bool
-    sender: Optional[str]               # numero o LID, tal cual esta en la base
-    timestamp: Optional[int]            # Unix epoch en segundos (UTC)
+    sender: Optional[str]               # number or LID, as it is in the base
+    timestamp: Optional[int]            # Unix epoch in seconds (UTC)
     kind: "codes.Kind"
     type_desc: str
     raw_type: Optional[int]
@@ -95,13 +95,13 @@ class Message:
     call_duration: Optional[int] = None
     call_video: bool = False
     call_result: Optional[str] = None
-    sender_name: Optional[str] = None   # nombre del remitente, si esta en la agenda
-    status: Optional[int] = None        # codigo de entrega/lectura
-    status_desc: Optional[str] = None   # su descripcion legible
-    delivered_ts: Optional[int] = None  # salida/recepcion en el dispositivo
-    server_ts: Optional[int] = None     # llegada al servidor
-    read_by: int = 0                    # en grupos: cuantos lo han leido
-    delivered_to: int = 0               # en grupos: a cuantos ha llegado
+    sender_name: Optional[str] = None   # sender name, if in the phonebook
+    status: Optional[int] = None        # delivery/read code
+    status_desc: Optional[str] = None   # its readable description
+    delivered_ts: Optional[int] = None  # output/reception on the device
+    server_ts: Optional[int] = None     # arrival to the server
+    read_by: int = 0                    # in groups: how many have read it
+    delivered_to: int = 0               # in groups: how many have been reached
     platform: str = ""
 
     @property
@@ -109,7 +109,7 @@ class Message:
         """Como mostrar el remitente: nombre si lo hay, si no el identificador."""
         return self.sender_name or self.sender or ""
 
-    # Campos que pueden llegar como bytes si la base los guardo como BLOB
+    # Fields that can arrive as bytes if the database saves them as BLOB
     _CAMPOS_TEXTO = ("chat_id", "sender", "text", "type_desc", "key_id",
                      "media_path", "media_mime", "media_caption",
                      "system_action", "sender_name")
@@ -195,7 +195,7 @@ class Extraction:
     calls: List[Call] = field(default_factory=list)
     chat_names: Dict[str, str] = field(default_factory=dict)
     lid_map: Dict[str, str] = field(default_factory=dict)
-    damaged_text: int = 0        # textos con bytes no validos en el origen
+    damaged_text: int = 0        # texts with invalid bytes at the source
     source_files: List[dict] = field(default_factory=list)
 
     def buscar_contacto(self, jid):
@@ -233,14 +233,14 @@ class Extraction:
         for m in self.messages:
             c = buckets.get(m.chat_id)
             if c is None:
-                # Prioridad: asunto del grupo guardado en la base > agenda > jid
+                # Priority: group subject stored in base > agenda > jid
                 nombre = self.chat_names.get(m.chat_id)
                 if not nombre:
                     ct = self.buscar_contacto(m.chat_id)
                     nombre = ct.display_name if ct else None
                 if not nombre and str(m.chat_id).endswith("@lid"):
-                    # Sin nombre y sin equivalencia: se marca para que no se
-                    # confunda ese numero largo con un telefono
+                    # Without name and without equivalence: it is marked so that it is not
+                    # I confused that long number with a telephone number.
                     nombre = "LID:" + short_jid(m.chat_id)
                 c = Chat(chat_id=m.chat_id, name=nombre,
                          is_group="g.us" in (m.chat_id or ""))
@@ -271,7 +271,7 @@ class Extraction:
 
 
 # ===========================================================================
-#  UTILIDADES
+#  UTILITIES
 # ===========================================================================
 def ios_date_to_unix(zdate):
     if zdate is None:
@@ -311,7 +311,7 @@ def _resolve_sender(jid, lidmap=None):
     if lidmap and jid in lidmap:
         return short_jid(lidmap[jid])
     if str(jid).endswith("@lid"):
-        # No hay correspondencia: se marca para no confundirlo con un telefono
+        # There is no correspondence: it is marked so as not to confuse it with a telephone
         return "LID:" + short_jid(jid)
     return short_jid(jid)
 
@@ -403,7 +403,7 @@ def _pick(available, *candidates):
 
 
 # ===========================================================================
-#  LECTOR ANDROID
+#  ANDROID READER
 # ===========================================================================
 def _android_subjects(con, tbls, jids):
     """jid del chat -> nombre del grupo.
@@ -692,7 +692,7 @@ def _read_wa_contacts(path):
         jid = _pick(c, "jid", "raw_string")
         if not jid:
             return {}
-        # orden: agenda del telefono -> nombre puesto en WhatsApp -> otros
+        # order: phone book -> name set in WhatsApp -> others
         cols_nombre = [x for x in (_pick(c, "display_name"), _pick(c, "wa_name"),
                                    _pick(c, "nickname"), _pick(c, "given_name"),
                                    _pick(c, "sort_name")) if x]
@@ -716,7 +716,7 @@ def _read_wa_contacts(path):
 
 
 # ===========================================================================
-#  LECTOR iOS
+#  iOS READER
 # ===========================================================================
 def _ios_media(con, tbls):
     if "ZWAMEDIAITEM" not in tbls:
@@ -779,7 +779,7 @@ def _read_ios(con):
             media_caption=mt, media_size=msz, latitude=mla, longitude=mlo,
             starred=bool(st), is_deleted=codes.is_deleted(codes.IOS, mtype),
             platform=codes.IOS))
-    # en iOS el nombre del chat (grupo incluido) esta en ZWACHATSESSION
+    # on iOS the name of the chat (group included) is in ZWACHATSESSION
     nombres = {j: n for j, n in sessions.values() if j and n}
     return out, [], nombres, {}
 
@@ -818,7 +818,7 @@ def _read_ios_contacts(path):
 
 
 # ===========================================================================
-#  DETECCIÓN DE PLATAFORMA Y ENTRADA PRINCIPAL
+#  PLATFORM AND MAIN ENTRANCE DETECTION
 # ===========================================================================
 def detect_platform(db_path):
     """Autodetecta el esquema del volcado."""

@@ -117,7 +117,7 @@ def parse_time(value):
 
 
 # ===========================================================================
-#  Construccion del filtro a partir de los argumentos
+#  Construction of the filter from the arguments
 # ===========================================================================
 TYPE_FLAGS = {
     "type_text": "text", "type_image": "image", "type_audio": "audio",
@@ -136,7 +136,7 @@ def build_filter(args):
     for flag, kind in TYPE_FLAGS.items():
         if getattr(args, flag, False):
             kinds.add(kind)
-            if kind == "view_once_image":       # agrupa los tres de vision unica
+            if kind == "view_once_image":       # groups the three with a single vision
                 kinds.update({"view_once_video", "view_once_voice"})
             if kind == "call":
                 kinds.add("call_missed")
@@ -162,7 +162,7 @@ def build_filter(args):
 
 
 # ===========================================================================
-#  Modos
+#  Modes
 # ===========================================================================
 def _aviso_media(args, r):
     """Resumen de adjuntos y mapas."""
@@ -346,7 +346,7 @@ def mode_carving(db_path, out_dir):
 
 
 # ===========================================================================
-#  Linea de ordenes
+#  order line
 # ===========================================================================
 def main():
     parser = argparse.ArgumentParser(
@@ -466,8 +466,8 @@ def main():
         sys.exit("[e] Elige un modo: -m (mensajes), -i (informacion), "
                  "-e (extraccion) o -c (carving)")
 
-    # Sin -o, el informe va al directorio actual. Nunca dentro de libs/: si la
-    # herramienta se invoca desde ahi, se sube a la raiz del proyecto.
+    # Without -o, the report goes to the current directory. Never inside libs/: if
+    # tool is invoked from there, it is uploaded to the root of the project.
     out_dir = args.output
     if not out_dir:
         actual = os.path.abspath(os.getcwd())
@@ -507,7 +507,7 @@ def main():
         print("\n[i] Finished")
         return
 
-    # ---- modo mensajes ----
+    # ---- message mode ----
     flt = build_filter(args)
     if not (args.user or args.group or args.user_all or args.all or args.broadcast
             or not flt.is_empty()):

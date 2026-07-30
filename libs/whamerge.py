@@ -1,5 +1,12 @@
-#!/usr/bin/python3
+﻿#!/usr/bin/python3
 # -*- coding: utf-8 -*-
+
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import whadeps
+whadeps.require("pandas", "numpy", tool="whamerge")
+whadeps.safe_console()
 
 import argparse
 import shutil
@@ -11,219 +18,92 @@ import sys
 # Define global variable
 # New Table message
 message_columns = [
-    "_id",
-    "chat_row_id",
-    "from_me",
-    "key_id",
-    "sender_jid_row_id",
-    "status",
-    "broadcast",
-    "recipient_count",
-    "participant_hash",
-    "origination_flags",
-    "origin",
-    "timestamp",
-    "received_timestamp",
-    "receipt_server_timestamp",
-    "message_type",
-    "text_data",
-    "starred",
-    "lookup_tables",
-    "sort_id",
-    "message_add_on_flags",
-]
+    '_id', 'chat_row_id','from_me','key_id','sender_jid_row_id','status','broadcast','recipient_count','participant_hash',
+    'origination_flags', 'origin','timestamp','received_timestamp','receipt_server_timestamp','message_type',
+    'text_data','starred','lookup_tables', 'sort_id','message_add_on_flags'
+    ]
 
 messages_columns = [
-    "_id",
-    "key_remote_jid",
-    "key_from_me",
-    "key_id",
-    "status",
-    "needs_push",
-    "data",
-    "timestamp",
-    "media_url",
-    "media_mime_type",
-    "media_wa_type",
-    "media_size",
-    "media_name",
-    "media_caption",
-    "media_hash",
-    "media_duration",
-    "origin",
-    "latitude",
-    "longitude",
-    "thumb_image",
-    "remote_resource",
-    "received_timestamp",
-    "send_timestamp",
-    "receipt_server_timestamp",
-    "receipt_device_timestamp",
-    "read_device_timestamp",
-    "played_device_timestamp",
-    "raw_data",
-    "recipient_count",
-    "participant_hash",
-    "starred",
-    "quoted_row_id",
-    "mentioned_jids",
-    "multicast_id",
-    "edit_version",
-    "media_enc_hash",
-    "payment_transaction_id",
-    "forwarded",
-    "preview_type",
-    "send_count",
-    "lookup_tables",
-    "future_message_type",
-    "message_add_on_flags",
-]
+    '_id', 'key_remote_jid','key_from_me','key_id','status','needs_push','data','timestamp','media_url','media_mime_type',
+    'media_wa_type','media_size','media_name','media_caption','media_hash','media_duration','origin','latitude',
+    'longitude','thumb_image','remote_resource','received_timestamp','send_timestamp','receipt_server_timestamp',
+    'receipt_device_timestamp','read_device_timestamp','played_device_timestamp','raw_data','recipient_count',
+    'participant_hash','starred','quoted_row_id','mentioned_jids','multicast_id','edit_version','media_enc_hash',
+    'payment_transaction_id','forwarded', 'preview_type', 'send_count', 'lookup_tables', 'future_message_type',
+    'message_add_on_flags'
+    ]
 
 chatlist_columns = [
-    "_id",
-    "jid_row_id",
-    "hidden",
-    "subject",
-    "created_timestamp",
-    "display_message_row_id",
-    "last_message_row_id",
-    "last_read_message_row_id",
-    "last_read_receipt_sent_message_row_id",
-    "last_important_message_row_id",
-    "archived",
-    "sort_timestamp",
-    "mod_tag",
-    "gen",
-    "spam_detection",
-    "unseen_earliest_message_received_time",
-    "unseen_message_count",
-    "unseen_missed_calls_count",
-    "unseen_row_count",
-    "plaintext_disabled",
-    "vcard_ui_dismissed",
-    "change_number_notified_message_row_id",
-    "show_group_description",
-    "ephemeral_expiration",
-    "last_read_ephemeral_message_row_id",
-    "ephemeral_setting_timestamp",
-    "unseen_important_message_count",
-    "ephemeral_disappearing_messages_initiator",
-    "group_type",
-    "last_message_reaction_row_id",
-    "last_seen_message_reaction_row_id",
-    "unseen_message_reaction_count",
-    "growth_lock_level",
-    "growth_lock_expiration_ts",
-    "last_read_message_sort_id",
-    "display_message_sort_id",
-    "last_message_sort_id",
-    "last_read_receipt_sent_message_sort_id",
-]
+    '_id','jid_row_id','hidden','subject','created_timestamp','display_message_row_id','last_message_row_id',
+    'last_read_message_row_id','last_read_receipt_sent_message_row_id','last_important_message_row_id','archived','sort_timestamp','mod_tag',
+    'gen','spam_detection', 'unseen_earliest_message_received_time', 'unseen_message_count', 'unseen_missed_calls_count',
+    'unseen_row_count','plaintext_disabled','vcard_ui_dismissed','change_number_notified_message_row_id','show_group_description',
+    'ephemeral_expiration','last_read_ephemeral_message_row_id','ephemeral_setting_timestamp','unseen_important_message_count',
+    'ephemeral_disappearing_messages_initiator', 'group_type', 'last_message_reaction_row_id', 'last_seen_message_reaction_row_id',
+    'unseen_message_reaction_count', 'growth_lock_level', 'growth_lock_expiration_ts', 'last_read_message_sort_id', 'display_message_sort_id',
+    'last_message_sort_id', 'last_read_receipt_sent_message_sort_id'
+    ]
 
 quote_columns = [
-    "_id",
-    "key_remote_jid",
-    "key_from_me",
-    "key_id",
-    "status",
-    "needs_push",
-    "data",
-    "timestamp",
-    "media_url",
-    "media_mime_type",
-    "media_wa_type",
-    "media_size",
-    "media_name",
-    "media_caption",
-    "media_hash",
-    "media_duration",
-    "origin",
-    "latitude",
-    "longitude",
-    "thumb_image",
-    "remote_resource",
-    "received_timestamp",
-    "send_timestamp",
-    "receipt_server_timestamp",
-    "receipt_device_timestamp",
-    "read_device_timestamp",
-    "played_device_timestamp",
-    "raw_data",
-    "recipient_count",
-    "participant_hash",
-    "starred",
-    "quoted_row_id",
-    "mentioned_jids",
-    "multicast_id",
-    "edit_version",
-    "media_enc_hash",
-    "payment_transaction_id",
-    "forwarded",
-    "preview_type",
-    "send_count",
-    "lookup_tables",
-    "future_message_type",
-    "message_add_on_flags",
-]
+    '_id', 'key_remote_jid','key_from_me','key_id','status','needs_push','data','timestamp','media_url','media_mime_type',
+    'media_wa_type','media_size','media_name','media_caption','media_hash','media_duration','origin','latitude',
+    'longitude','thumb_image','remote_resource','received_timestamp','send_timestamp','receipt_server_timestamp',
+    'receipt_device_timestamp','read_device_timestamp','played_device_timestamp','raw_data','recipient_count',
+    'participant_hash','starred','quoted_row_id','mentioned_jids','multicast_id','edit_version','media_enc_hash',
+    'payment_transaction_id','forwarded', 'preview_type', 'send_count', 'lookup_tables', 'future_message_type',
+    'message_add_on_flags'
+    ]
 
 thumbnail_columns = [
-    "thumbnail",
-    "timestamp",
-    "key_remote_jid",
-    "key_from_me",
-    "key_id",
-]
+    'thumbnail','timestamp','key_remote_jid','key_from_me','key_id'
+    ]
 
 
 def banner():
-    """Function Banner"""
+    """ Function Banner """
 
-    print("""
-     __      __.__
-    /  \    /  \  |__ _____    _____   ___________  ____   ____
-    \   \/\/   /  |  \\\\__  \  /     \_/ __ \_  __ \/ ___\_/ __ \
-     \        /|   Y  \/ __ \|  Y Y  \  ___/|  | \/ /_/  >  ___/
+    print(r"""
+     __      __.__                                               
+    /  \    /  \  |__ _____    _____   ___________  ____   ____  
+    \   \/\/   /  |  \\__  \  /     \_/ __ \_  __ \/ ___\_/ __ \ 
+     \        /|   Y  \/ __ \|  Y Y  \  ___/|  | \/ /_/  >  ___/ 
       \__/\  / |___|  (____  /__|_|  /\___  >__|  \___  / \___  >
-           \/       \/     \/      \/     \/     /_____/      \/
+           \/       \/     \/      \/     \/     /_____/      \/ 
     ------------------------ Whatsapp Merger -----------------------
     """)
 
 
 def help():
-    """Function show help"""
+    """ Function show help """
 
     print("""
     ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
-
+    
     Usage: python whamerge.py -h (for help)
     """)
 
 
 def merge(db_path, db_name):
-    """Function merges database"""
+    """ Function merges database """
 
     if os.path.isdir(db_path):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(db_path):
+        for db_file in os.listdir(args.path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            sys.exit()
+            exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            sys.exit()
-        print(
-            "[i] {} database found - make sure they are all msgstore databases".format(
-                len(list_dbs)
-            )
-        )
+            exit()
+        print("[i] {} database found - make sure they are all msgstore databases".format(len(list_dbs)))
         # Copy first 'db' in db_name and open write connection
         if list_dbs[0] != db_name:
             try:
@@ -258,39 +138,27 @@ def merge(db_path, db_name):
                 # Open write connection
                 with sqlite3.connect(db_name) as output:
                     cursor_write = output.cursor()
-
+                    
                 cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = set(cursor_write.fetchall())
-
+                ids_message_write = cursor_write.fetchall()
+                
                 cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = set(cursor_write.fetchall())
+                ids_chatlist_write = cursor_write.fetchall()
 
                 cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = set(cursor_write.fetchall())
+                ids_quote_write = cursor_write.fetchall()
 
                 cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = set(cursor_write.fetchall())
+                ids_thumb_write = cursor_write.fetchall()
 
-                print(
-                    "   [-] "
-                    + db_name
-                    + " --> "
-                    + str(len(ids_message_write))
-                    + " messages, "
-                    + str(len(ids_chatlist_write))
-                    + " chats, "
-                    + str(len(ids_quote_write))
-                    + " replies, "
-                    + str(len(ids_thumb_write))
-                    + " thumbnails"
-                )
+                print("   [-] " + db_name + " --> " + str(len(ids_message_write)) + " messages, " + str(len(ids_chatlist_write)) + " chats, " + str(len(ids_quote_write)) + " replies, " + str(len(ids_thumb_write)) + " thumbnails")
                 # Open read connection
                 with sqlite3.connect(db_path + filename) as orig:
                     cursor_read = orig.cursor()
-
+                    
                 cursor_read.execute("SELECT _id FROM messages;")
                 ids_message_read = cursor_read.fetchall()
-
+                
                 cursor_read.execute("SELECT _id FROM chat;")
                 ids_chatlist_read = cursor_read.fetchall()
 
@@ -299,207 +167,111 @@ def merge(db_path, db_name):
 
                 cursor_read.execute("SELECT rowid FROM message_thumbnails;")
                 ids_thumb_read = cursor_read.fetchall()
-                print(
-                    "   [-] "
-                    + filename
-                    + " --> "
-                    + str(len(ids_message_read))
-                    + " messages, "
-                    + str(len(ids_chatlist_read))
-                    + " chats, "
-                    + str(len(ids_quote_read))
-                    + " replies, "
-                    + str(len(ids_thumb_read))
-                    + " thumbnails"
-                )
+                print("   [-] " + filename + " --> " + str(len(ids_message_read)) + " messages, " + str(len(ids_chatlist_read)) + " chats, " + str(len(ids_quote_read)) + " replies, " + str(len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
-                ids_message_write_set = set(ids_message_write)
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_quote_write_set = set(ids_quote_write)
-                ids_thumb_write_set = set(ids_thumb_write)
-
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []
                 for item in ids_message_read:
-                    if item not in ids_message_write_set:
+                    if item not in ids_message_write:
                         ids_message_insert.append(str(item[0]))
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write_set:
+                    if item not in ids_chatlist_write:
                         ids_chatlist_insert.append(str(item[0]))
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
                 ids_quote_insert = []
                 for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
+                    if item not in ids_quote_write:
                         ids_quote_insert.append(str(item[0]))
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
-                    if item not in ids_thumb_write_set:
+                    if item not in ids_thumb_write:
                         ids_thumb_insert.append(str(item[0]))
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 
                 num_ids_message_cols = len(ids_message_insert)
-                str_id_message_cols = ",".join(
-                    ids_message_insert[:num_ids_message_cols]
-                )
-                elements_message_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_message_cols
-                    + " FROM messages WHERE _id IN ("
-                    + str_id_message_cols
-                    + ");"
-                )
+                str_id_message_cols = ",".join(ids_message_insert[:num_ids_message_cols])
+                elements_message_cursor = cursor_read.execute("SELECT " + str_message_cols + " FROM messages WHERE _id IN (" + str_id_message_cols + ");")
                 elements_message_insert = elements_message_cursor.fetchall()
 
                 num_ids_chatlist_cols = len(ids_chatlist_insert)
-                str_id_chatlist_cols = ",".join(
-                    ids_chatlist_insert[:num_ids_chatlist_cols]
-                )
-                elements_chatlist_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_chatlist_cols
-                    + " FROM chat WHERE _id IN ("
-                    + str_id_chatlist_cols
-                    + ");"
-                )
+                str_id_chatlist_cols = ",".join(ids_chatlist_insert[:num_ids_chatlist_cols])
+                elements_chatlist_cursor = cursor_read.execute("SELECT " + str_chatlist_cols + " FROM chat WHERE _id IN (" + str_id_chatlist_cols + ");")
                 elements_chatlist_insert = elements_chatlist_cursor.fetchall()
 
                 num_ids_quote_cols = len(ids_quote_insert)
                 str_id_quote_cols = ",".join(ids_quote_insert[:num_ids_quote_cols])
-                elements_quote_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_quote_cols
-                    + " FROM messages_quotes WHERE _id IN ("
-                    + str_id_quote_cols
-                    + ");"
-                )
+                elements_quote_cursor = cursor_read.execute("SELECT " + str_quote_cols + " FROM messages_quotes WHERE _id IN (" + str_id_quote_cols + ");")
                 elements_quote_insert = elements_quote_cursor.fetchall()
 
                 num_ids_thumb_cols = len(ids_thumb_insert)
                 str_id_thumb_cols = ",".join(ids_thumb_insert[:num_ids_thumb_cols])
-                elements_thumb_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_thumb_cols
-                    + " FROM message_thumbnails WHERE rowid IN ("
-                    + str_id_thumb_cols
-                    + ");"
-                )
+                elements_thumb_cursor = cursor_read.execute("SELECT " + str_thumb_cols + " FROM message_thumbnails WHERE rowid IN (" + str_id_thumb_cols + ");")
                 elements_thumb_insert = elements_thumb_cursor.fetchall()
 
                 # Insert the elements into the database
                 try:
-                    if elements_message_insert:
-                        insert_query = (
-                            "INSERT INTO messages("
-                            + str_message_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(messages_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_message_insert)
+                    for msg in elements_message_insert:
+                        insert_query = "INSERT INTO messages(" + str_message_cols + ") VALUES (" + ','.join('?' for x in range(0, len(messages_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_chatlist_insert:
-                        insert_query = (
-                            "INSERT INTO chat("
-                            + str_chatlist_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(chatlist_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_chatlist_insert)
+                    for msg in elements_chatlist_insert:
+                        insert_query = "INSERT INTO chat(" + str_chatlist_cols + ") VALUES (" + ','.join('?' for x in range(0, len(chatlist_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_quote_insert:
-                        insert_query = (
-                            "INSERT INTO messages_quotes("
-                            + str_quote_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(quote_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_quote_insert)
+                    for msg in elements_quote_insert:
+                        insert_query = "INSERT INTO messages_quotes(" + str_quote_cols + ") VALUES (" + ','.join('?' for x in range(0, len(quote_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_thumb_insert:
-                        insert_query = (
-                            "INSERT INTO message_thumbnails("
-                            + str_thumb_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(thumbnail_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_thumb_insert)
-
-                    output.commit()
+                    for msg in elements_thumb_insert:
+                        insert_query = "INSERT INTO message_thumbnails(" + str_thumb_cols + ") VALUES (" + ','.join('?' for x in range(0, len(thumbnail_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)
 
-                print(
-                    "   [i] "
-                    + str(len(ids_message_insert))
-                    + " new messages, "
-                    + str(len(ids_chatlist_insert))
-                    + " new chats, "
-                    + str(len(ids_quote_insert))
-                    + " new replies, "
-                    + str(len(ids_thumb_insert))
-                    + " new thumbnails"
-                )
+                print("   [i] " + str(len(ids_message_insert)) + " new messages, " + str(len(ids_chatlist_insert)) + " new chats, " + str(len(ids_quote_insert)) + " new replies, " + str(len(ids_thumb_insert)) + " new thumbnails")
 
                 total_message += len(ids_message_insert)
                 total_chatlist += len(ids_chatlist_insert)
                 total_quote += len(ids_quote_insert)
                 total_thumb += len(ids_thumb_insert)
 
-        print(
-            "\n[i] Added "
-            + str(total_message)
-            + " new messages, "
-            + str(total_chatlist)
-            + " new chats, "
-            + str(total_quote)
-            + " new replies, "
-            + str(total_thumb)
-            + " new thumbnails to "
-            + db_name
-        )
+        print("\n[i] Added " + str(total_message) + " new messages, " + str(total_chatlist) + " new chats, " + str(total_quote) + " new replies, " + str(total_thumb) + " new thumbnails to " + db_name)
 
 
 def merge_win(db_path, db_name):
-    """Function merges database"""
+    """ Function merges database """
     if os.path.isdir(db_path):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(db_path):
+        for db_file in os.listdir(args.path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            sys.exit()
+            exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            sys.exit()
-        print(
-            "[i] {} database found - make sure they are all msgstore databases".format(
-                len(list_dbs)
-            )
-        )
+            exit()
+        print("[i] {} database found - make sure they are all msgstore databases".format(len(list_dbs)))
         # Copy first 'db' in db_name and open write connection
 
         if list_dbs[0] != db_name:
@@ -536,30 +308,20 @@ def merge_win(db_path, db_name):
                     cursor_write = output.cursor()
 
                 cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = set(cursor_write.fetchall())
+                ids_message_write = cursor_write.fetchall()
 
                 cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = set(cursor_write.fetchall())
+                ids_chatlist_write = cursor_write.fetchall()
 
                 cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = set(cursor_write.fetchall())
+                ids_quote_write = cursor_write.fetchall()
 
                 cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = set(cursor_write.fetchall())
+                ids_thumb_write = cursor_write.fetchall()
 
-                print(
-                    "   [-] "
-                    + db_name
-                    + " --> "
-                    + str(len(ids_message_write))
-                    + " messages, "
-                    + str(len(ids_chatlist_write))
-                    + " chats, "
-                    + str(len(ids_quote_write))
-                    + " replies, "
-                    + str(len(ids_thumb_write))
-                    + " thumbnails"
-                )
+                print("   [-] " + db_name + " --> " + str(len(ids_message_write)) + " messages, " + str(
+                    len(ids_chatlist_write)) + " chats, " + str(len(ids_quote_write)) + " replies, " + str(
+                    len(ids_thumb_write)) + " thumbnails")
                 # Open read connection
                 with sqlite3.connect(db_path + filename) as orig:
                     cursor_read = orig.cursor()
@@ -575,196 +337,111 @@ def merge_win(db_path, db_name):
 
                 cursor_read.execute("SELECT rowid FROM message_thumbnails;")
                 ids_thumb_read = cursor_read.fetchall()
-                print(
-                    "   [-] "
-                    + filename
-                    + " --> "
-                    + str(len(ids_message_read))
-                    + " messages, "
-                    + str(len(ids_chatlist_read))
-                    + " chats, "
-                    + str(len(ids_quote_read))
-                    + " replies, "
-                    + str(len(ids_thumb_read))
-                    + " thumbnails"
-                )
+                print("   [-] " + filename + " --> " + str(len(ids_message_read)) + " messages, " + str(
+                    len(ids_chatlist_read)) + " chats, " + str(len(ids_quote_read)) + " replies, " + str(
+                    len(ids_thumb_read)) + " thumbnails")
 
                 # Searches for messages, chatlist that are not there and inserts them into a list
-                ids_message_write_set = set(ids_message_write)
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_quote_write_set = set(ids_quote_write)
-                ids_thumb_write_set = set(ids_thumb_write)
-
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
                 ids_message_insert = []
                 for item in ids_message_read:
-                    if item not in ids_message_write_set:
+                    if item not in ids_message_write:
                         ids_message_insert.append(str(item[0]))
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
                 ids_chatlist_insert = []
                 for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write_set:
+                    if item not in ids_chatlist_write:
                         ids_chatlist_insert.append(str(item[0]))
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
                 ids_quote_insert = []
                 for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
+                    if item not in ids_quote_write:
                         ids_quote_insert.append(str(item[0]))
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
                 ids_thumb_insert = []
                 for item in ids_thumb_read:
-                    if item not in ids_thumb_write_set:
+                    if item not in ids_thumb_write:
                         ids_thumb_insert.append(str(item[0]))
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 
                 num_ids_message_cols = len(ids_message_insert)
-                str_id_message_cols = ",".join(
-                    ids_message_insert[:num_ids_message_cols]
-                )
+                str_id_message_cols = ",".join(ids_message_insert[:num_ids_message_cols])
                 elements_message_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_message_cols
-                    + " FROM messages WHERE _id IN ("
-                    + str_id_message_cols
-                    + ");"
-                )
+                    "SELECT " + str_message_cols + " FROM messages WHERE _id IN (" + str_id_message_cols + ");")
                 elements_message_insert = elements_message_cursor.fetchall()
 
                 num_ids_chatlist_cols = len(ids_chatlist_insert)
-                str_id_chatlist_cols = ",".join(
-                    ids_chatlist_insert[:num_ids_chatlist_cols]
-                )
+                str_id_chatlist_cols = ",".join(ids_chatlist_insert[:num_ids_chatlist_cols])
                 elements_chatlist_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_chatlist_cols
-                    + " FROM chat WHERE _id IN ("
-                    + str_id_chatlist_cols
-                    + ");"
-                )
+                    "SELECT " + str_chatlist_cols + " FROM chat WHERE _id IN (" + str_id_chatlist_cols + ");")
                 elements_chatlist_insert = elements_chatlist_cursor.fetchall()
 
                 num_ids_quote_cols = len(ids_quote_insert)
                 str_id_quote_cols = ",".join(ids_quote_insert[:num_ids_quote_cols])
                 elements_quote_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_quote_cols
-                    + " FROM messages_quotes WHERE _id IN ("
-                    + str_id_quote_cols
-                    + ");"
-                )
+                    "SELECT " + str_quote_cols + " FROM messages_quotes WHERE _id IN (" + str_id_quote_cols + ");")
                 elements_quote_insert = elements_quote_cursor.fetchall()
 
                 num_ids_thumb_cols = len(ids_thumb_insert)
                 str_id_thumb_cols = ",".join(ids_thumb_insert[:num_ids_thumb_cols])
                 elements_thumb_cursor = cursor_read.execute(
-                    "SELECT "
-                    + str_thumb_cols
-                    + " FROM message_thumbnails WHERE rowid IN ("
-                    + str_id_thumb_cols
-                    + ");"
-                )
+                    "SELECT " + str_thumb_cols + " FROM message_thumbnails WHERE rowid IN (" + str_id_thumb_cols + ");")
                 elements_thumb_insert = elements_thumb_cursor.fetchall()
 
                 # Insert the elements into the database
                 try:
-                    if elements_message_insert:
-                        insert_query = (
-                            "INSERT INTO messages("
-                            + str_message_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(messages_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_message_insert)
+                    for msg in elements_message_insert:
+                        insert_query = "INSERT INTO messages(" + str_message_cols + ") VALUES (" + ','.join(
+                            '?' for x in range(0, len(messages_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_chatlist_insert:
-                        insert_query = (
-                            "INSERT INTO chat("
-                            + str_chatlist_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(chatlist_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_chatlist_insert)
+                    for msg in elements_chatlist_insert:
+                        insert_query = "INSERT INTO chat(" + str_chatlist_cols + ") VALUES (" + ','.join(
+                            '?' for x in range(0, len(chatlist_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_quote_insert:
-                        insert_query = (
-                            "INSERT INTO messages_quotes("
-                            + str_quote_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(quote_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_quote_insert)
+                    for msg in elements_quote_insert:
+                        insert_query = "INSERT INTO messages_quotes(" + str_quote_cols + ") VALUES (" + ','.join(
+                            '?' for x in range(0, len(quote_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
-                    if elements_thumb_insert:
-                        insert_query = (
-                            "INSERT INTO message_thumbnails("
-                            + str_thumb_cols
-                            + ") VALUES ("
-                            + ",".join("?" for x in range(0, len(thumbnail_columns)))
-                            + ")"
-                        )
-                        cursor_write.executemany(insert_query, elements_thumb_insert)
-
-                    output.commit()
+                    for msg in elements_thumb_insert:
+                        insert_query = "INSERT INTO message_thumbnails(" + str_thumb_cols + ") VALUES (" + ','.join(
+                            '?' for x in range(0, len(thumbnail_columns))) + ")"
+                        cursor_write.execute(insert_query, msg)
+                        output.commit()
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)
 
-                print(
-                    "   [i] "
-                    + str(len(ids_message_insert))
-                    + " new messages, "
-                    + str(len(ids_chatlist_insert))
-                    + " new chats, "
-                    + str(len(ids_quote_insert))
-                    + " new replies, "
-                    + str(len(ids_thumb_insert))
-                    + " new thumbnails"
-                )
+                print("   [i] " + str(len(ids_message_insert)) + " new messages, " + str(
+                    len(ids_chatlist_insert)) + " new chats, " + str(len(ids_quote_insert)) + " new replies, " + str(
+                    len(ids_thumb_insert)) + " new thumbnails")
 
                 total_message += len(ids_message_insert)
                 total_chatlist += len(ids_chatlist_insert)
                 total_quote += len(ids_quote_insert)
                 total_thumb += len(ids_thumb_insert)
 
-        print(
-            "\n[i] Added "
-            + str(total_message)
-            + " new messages, "
-            + str(total_chatlist)
-            + " new chats, "
-            + str(total_quote)
-            + " new replies, "
-            + str(total_thumb)
-            + " new thumbnails to "
-            + db_name
-        )
+        print("\n[i] Added " + str(total_message) + " new messages, " + str(total_chatlist) + " new chats, " + str(
+            total_quote) + " new replies, " + str(total_thumb) + " new thumbnails to " + db_name)
 
 
 # Initializing
 if __name__ == "__main__":
     banner()
-    parser = argparse.ArgumentParser(
-        description="Choose a database files path to merge"
-    )
-    parser.add_argument(
-        "path", help="Database path", metavar="PATH", nargs="?", default="."
-    )
-    parser.add_argument(
-        "-o", "--output", help="Database output file 'msgstore_merge.db'"
-    )
+    parser = argparse.ArgumentParser(description="Choose a database files path to merge")
+    parser.add_argument("path", help="Database path", metavar="PATH", nargs='?', default=".")
+    parser.add_argument("-o", "--output", help="Database output file 'msgstore_merge.db'")
     args = parser.parse_args()
     if len(sys.argv) == 1:
         help()

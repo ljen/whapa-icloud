@@ -15,6 +15,10 @@ import os
 import argparse
 import click
 import time
+try:
+    import whacloud_decrypt
+except ImportError:
+    whacloud_decrypt = None
 
 # Defines global variable
 exitFlag = 0
@@ -166,6 +170,22 @@ def getMultipleFilesThread(photo, local, now, lenfiles, threadName):
             opened_file.write(download.raw.read())
 
         print("    [-] Number: {}/{} - {} => Downloaded: {}".format(now, lenfiles, threadName, local))
+        
+        # Auto-decrypt if key is provided
+        if hasattr(args, 'key') and args.key and whacloud_decrypt:
+            try:
+                if local.endswith('.enc'):
+                    print("    [*] Decrypting database: {}".format(local))
+                    out_path = local[:-4]
+                    whacloud_decrypt.decrypt_enc(local, out_path, bytes.fromhex(args.key))
+                    print("    [+] Decrypted successfully to: {}".format(out_path))
+                elif whacloud_decrypt.is_media_tar(local):
+                    print("    [*] Decrypting media tarball: {}".format(local))
+                    out_dir = os.path.join(os.path.dirname(local), os.path.basename(local).replace('.tar', '_decrypted'))
+                    whacloud_decrypt.decrypt_media_tar(local, out_dir, bytes.fromhex(args.key))
+                    print("    [+] Media extracted to: {}".format(out_dir))
+            except Exception as e:
+                print("    [!] Failed to decrypt {}: {}".format(local, e))
 
     else:
         print("    [-] Number: {}/{} - {} => Skipped: {}".format(now, lenfiles, threadName, local))
@@ -247,6 +267,7 @@ if __name__ == "__main__":
     user_parser.add_argument("-si", "--s_images", help="Sync Images files locally", action="store_true")
     user_parser.add_argument("-sv", "--s_videos", help="Sync Videos/Audios files locally", action="store_true")
     parser.add_argument("-o", "--output", help="Output path to save files")
+    parser.add_argument("-k", "--key", help="64-character hex key to automatically decrypt E2EE iOS backups")
     args = parser.parse_args()
 
     files = []
@@ -304,6 +325,22 @@ if __name__ == "__main__":
                             with open(local, 'wb') as opened_file:
                                 opened_file.write(download.raw.read())
                                 print("    [-] Downloaded: {}".format(local))
+                            
+                            # Auto-decrypt if key is provided
+                            if hasattr(args, 'key') and args.key and whacloud_decrypt:
+                                try:
+                                    if local.endswith('.enc'):
+                                        print("    [*] Decrypting database: {}".format(local))
+                                        out_path = local[:-4]
+                                        whacloud_decrypt.decrypt_enc(local, out_path, bytes.fromhex(args.key))
+                                        print("    [+] Decrypted successfully to: {}".format(out_path))
+                                    elif whacloud_decrypt.is_media_tar(local):
+                                        print("    [*] Decrypting media tarball: {}".format(local))
+                                        out_dir = os.path.join(os.path.dirname(local), os.path.basename(local).replace('.tar', '_decrypted'))
+                                        whacloud_decrypt.decrypt_media_tar(local, out_dir, bytes.fromhex(args.key))
+                                        print("    [+] Media extracted to: {}".format(out_dir))
+                                except Exception as e:
+                                    print("    [!] Failed to decrypt {}: {}".format(local, e))
 
                 else:
                     print("    [-] Skipped: {}".format(local))

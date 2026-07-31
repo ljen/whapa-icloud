@@ -250,26 +250,30 @@ def merge(db_path, db_name):
         str_thumb_cols = ",".join(thumbnail_columns[:num_thumb_cols])
         total_thumb = 0
 
+        # Open write connection once to get existing IDs
+        with sqlite3.connect(db_name) as output:
+            cursor_write = output.cursor()
+
+            cursor_write.execute("SELECT _id FROM messages;")
+            ids_message_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT _id FROM chat;")
+            ids_chatlist_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT _id FROM messages_quotes;")
+            ids_quote_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT rowid FROM message_thumbnails;")
+            ids_thumb_write = {item[0] for item in cursor_write.fetchall()}
+
         # Scrolls through each file to merge, skipping the first and last
         for filename in list_dbs:
             if (filename != list_dbs[0]) and (filename != db_name):
                 print("[+] Merging: " + filename)
 
-                # Open write connection
-                with sqlite3.connect(db_name) as output:
-                    cursor_write = output.cursor()
-
-                cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = set(cursor_write.fetchall())
+                # Re-open write connection for this file's insertions
+                output = sqlite3.connect(db_name)
+                cursor_write = output.cursor()
 
                 print(
                     "   [-] "
@@ -313,42 +317,24 @@ def merge(db_path, db_name):
                     + " thumbnails"
                 )
 
-                # Searches for messages, chatlist that are not there and inserts them into a list
-                ids_message_write_set = set(ids_message_write)
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_quote_write_set = set(ids_quote_write)
-                ids_thumb_write_set = set(ids_thumb_write)
-
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
-                ids_message_insert = []
-                for item in ids_message_read:
-                    if item not in ids_message_write_set:
-                        ids_message_insert.append(str(item[0]))
+                ids_message_insert = [str(item[0]) for item in ids_message_read if item[0] not in ids_message_write]
+                ids_message_write.update(int(id_str) for id_str in ids_message_insert)
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_chatlist_insert = []
-                for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write_set:
-                        ids_chatlist_insert.append(str(item[0]))
+                ids_chatlist_insert = [str(item[0]) for item in ids_chatlist_read if item[0] not in ids_chatlist_write]
+                ids_chatlist_write.update(int(id_str) for id_str in ids_chatlist_insert)
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
-                ids_quote_insert = []
-                for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
-                        ids_quote_insert.append(str(item[0]))
+                ids_quote_insert = [str(item[0]) for item in ids_quote_read if item[0] not in ids_quote_write]
+                ids_quote_write.update(int(id_str) for id_str in ids_quote_insert)
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
-                ids_thumb_insert = []
-                for item in ids_thumb_read:
-                    if item not in ids_thumb_write_set:
-                        ids_thumb_insert.append(str(item[0]))
+                ids_thumb_insert = [str(item[0]) for item in ids_thumb_read if item[0] not in ids_thumb_write]
+                ids_thumb_write.update(int(id_str) for id_str in ids_thumb_insert)
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 
                 num_ids_message_cols = len(ids_message_insert)
@@ -445,6 +431,8 @@ def merge(db_path, db_name):
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)
+                finally:
+                    output.close()
 
                 print(
                     "   [i] "
@@ -526,26 +514,30 @@ def merge_win(db_path, db_name):
         str_thumb_cols = ",".join(thumbnail_columns[:num_thumb_cols])
         total_thumb = 0
 
+        # Open write connection once to get existing IDs
+        with sqlite3.connect(db_name) as output:
+            cursor_write = output.cursor()
+
+            cursor_write.execute("SELECT _id FROM messages;")
+            ids_message_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT _id FROM chat;")
+            ids_chatlist_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT _id FROM messages_quotes;")
+            ids_quote_write = {item[0] for item in cursor_write.fetchall()}
+
+            cursor_write.execute("SELECT rowid FROM message_thumbnails;")
+            ids_thumb_write = {item[0] for item in cursor_write.fetchall()}
+
         # Scrolls through each file to merge, skipping the first and last
         for filename in list_dbs:
             if (filename != list_dbs[0]) and (filename != db_name):
                 print("[+] Merging: " + filename)
 
-                # Open write connection
-                with sqlite3.connect(db_name) as output:
-                    cursor_write = output.cursor()
-
-                cursor_write.execute("SELECT _id FROM messages;")
-                ids_message_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT _id FROM chat;")
-                ids_chatlist_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT _id FROM messages_quotes;")
-                ids_quote_write = set(cursor_write.fetchall())
-
-                cursor_write.execute("SELECT rowid FROM message_thumbnails;")
-                ids_thumb_write = set(cursor_write.fetchall())
+                # Re-open write connection for this file's insertions
+                output = sqlite3.connect(db_name)
+                cursor_write = output.cursor()
 
                 print(
                     "   [-] "
@@ -589,42 +581,24 @@ def merge_win(db_path, db_name):
                     + " thumbnails"
                 )
 
-                # Searches for messages, chatlist that are not there and inserts them into a list
-                ids_message_write_set = set(ids_message_write)
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_quote_write_set = set(ids_quote_write)
-                ids_thumb_write_set = set(ids_thumb_write)
-
                 print("[+] Looking for new messages")
-                ids_message_write_set = set(ids_message_write)
-                ids_message_insert = []
-                for item in ids_message_read:
-                    if item not in ids_message_write_set:
-                        ids_message_insert.append(str(item[0]))
+                ids_message_insert = [str(item[0]) for item in ids_message_read if item[0] not in ids_message_write]
+                ids_message_write.update(int(id_str) for id_str in ids_message_insert)
                 print("   [-] New messages", len(ids_message_insert))
 
                 print("[+] Looking for new chats")
-                ids_chatlist_write_set = set(ids_chatlist_write)
-                ids_chatlist_insert = []
-                for item in ids_chatlist_read:
-                    if item not in ids_chatlist_write_set:
-                        ids_chatlist_insert.append(str(item[0]))
+                ids_chatlist_insert = [str(item[0]) for item in ids_chatlist_read if item[0] not in ids_chatlist_write]
+                ids_chatlist_write.update(int(id_str) for id_str in ids_chatlist_insert)
                 print("   [-] New chats", len(ids_chatlist_insert))
 
                 print("[+] Looking for new replies")
-                ids_quote_write_set = set(ids_quote_write)
-                ids_quote_insert = []
-                for item in ids_quote_read:
-                    if item not in ids_quote_write_set:
-                        ids_quote_insert.append(str(item[0]))
+                ids_quote_insert = [str(item[0]) for item in ids_quote_read if item[0] not in ids_quote_write]
+                ids_quote_write.update(int(id_str) for id_str in ids_quote_insert)
                 print("   [-] New replies", len(ids_quote_insert))
 
                 print("[+] Looking for new Thumbnails")
-                ids_thumb_write_set = set(ids_thumb_write)
-                ids_thumb_insert = []
-                for item in ids_thumb_read:
-                    if item not in ids_thumb_write_set:
-                        ids_thumb_insert.append(str(item[0]))
+                ids_thumb_insert = [str(item[0]) for item in ids_thumb_read if item[0] not in ids_thumb_write]
+                ids_thumb_write.update(int(id_str) for id_str in ids_thumb_insert)
                 print("   [-] New Thumbnails", len(ids_thumb_insert))
 
                 num_ids_message_cols = len(ids_message_insert)
@@ -721,6 +695,8 @@ def merge_win(db_path, db_name):
 
                 except sqlite3.IntegrityError as e:
                     print("   [e] Error inserting elements: ", e)
+                finally:
+                    output.close()
 
                 print(
                     "   [i] "

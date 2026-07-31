@@ -5,7 +5,8 @@ import sys
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+import tempfile
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1, is_media_tar
 
 
 class TestHkdfV1(unittest.TestCase):
@@ -118,6 +119,55 @@ class TestSafeJoin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
+
+
+class TestIsMediaTar(unittest.TestCase):
+    def test_valid_media_tar(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            content = b"\x00" * 257 + b"ustar" + b"\x00" * 3
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            self.assertTrue(is_media_tar(tmp_path))
+        finally:
+            os.remove(tmp_path)
+
+    def test_starts_with_83(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            content = b"\x83" + b"\x00" * 264
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            self.assertFalse(is_media_tar(tmp_path))
+        finally:
+            os.remove(tmp_path)
+
+    def test_invalid_not_ustar(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            content = b"\x00" * 265
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            self.assertFalse(is_media_tar(tmp_path))
+        finally:
+            os.remove(tmp_path)
+
+    def test_short_file(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            content = b"short"
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            self.assertFalse(is_media_tar(tmp_path))
+        finally:
+            os.remove(tmp_path)
+
+    def test_non_existent_file(self):
+        self.assertFalse(is_media_tar("/non_existent_path_to_a_file_for_is_media_tar_test.tar"))
+
+    def test_directory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self.assertFalse(is_media_tar(tmpdir))
 
 
 if __name__ == "__main__":

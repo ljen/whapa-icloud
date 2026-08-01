@@ -546,6 +546,7 @@ def reply(id, local):
                         "remote_resource, edit_version, thumb_image, recipient_count, raw_data, starred, quoted_row_id, forwarded FROM messages_quotes WHERE _id = ?"
             sql_answer = cursor_rep.execute(sql_reply_str, (id,))
             rep = sql_answer.fetchone()
+    rep = sql_answer.fetchone()
     ans = ""
     reply_msj = ""
     if rep is not None:  # Message not deleted

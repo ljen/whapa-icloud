@@ -177,7 +177,7 @@ def build_filter(args):
         direction=args.direction,
         kinds=kinds or None,
         raw_types=(
-            set(int(x) for x in args.raw_types.split(",")) if args.raw_types else None
+            {int(x) for x in args.raw_types.split(",")} if args.raw_types else None
         ),
         only_deleted=args.type_deleted and len(kinds) == 1,
         only_starred=args.starred,

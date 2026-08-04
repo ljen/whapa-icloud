@@ -164,7 +164,7 @@ def _encryption_loop(
     ).digest()
     data = b""
     output = b""
-    permutations = int(math.ceil(output_bytes / 32.0))
+    permutations = math.ceil(output_bytes / 32.0)
     for i in range(1, permutations + 1):
         hasher = hmac.new(privatekey, msg=data, digestmod=sha256)
         if message is not None:

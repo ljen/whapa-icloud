@@ -522,9 +522,7 @@ def get_configs():
 def startsWithDateTimeiOS(s):
     pattern = r"^\[([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*)\]"  # [25/8/20, 19:52:23]
     result = re.match(pattern, s)
-    if result:
-        return True
-    return False
+    return bool(result)
 
 
 def startsWithDateTimeAndroid(s):
@@ -533,9 +531,7 @@ def startsWithDateTimeAndroid(s):
         r"^([0-9]*[/.][0-9]*[/.][0-9]*\W*[0-9]*.[0-9]*.[0-9]*) -"  # 24.07.21, 10:15 -
     )
     result = re.match(pattern, s)
-    if result:
-        return True
-    return False
+    return bool(result)
 
 
 def startsWithAuthor(s):
@@ -549,9 +545,7 @@ def startsWithAuthor(s):
     ]
     pattern = "^" + "|".join(patterns)
     result = re.match(pattern, s)
-    if result:
-        return True
-    return False
+    return bool(result)
 
 
 def getDataPointiOS(line):
@@ -683,7 +677,7 @@ def getDataFrame(conversationPath, operating_system):
         return df
     except Exception:
         print("[e] Error getting participants. Choose another operating system.")
-        exit()
+        sys.exit()
 
 
 def getAttachediOS(message):
@@ -739,7 +733,7 @@ def getAttachediOS(message):
             )
 
         else:
-            fileName, fileExtension = os.path.splitext(file)
+            _fileName, fileExtension = os.path.splitext(file)
             if fileExtension == ".vcf":
                 # Parse vcf
                 message = (
@@ -848,7 +842,7 @@ def getAttachedAndroid(message):
             )
 
         else:
-            fileName, fileExtension = os.path.splitext(file)
+            _fileName, fileExtension = os.path.splitext(file)
             if fileExtension == ".vcf":
                 # Parse vcf
                 message = (
@@ -1216,7 +1210,7 @@ if __name__ == "__main__":
                     if i is not None:
                         print(i)
                         file_w.write(i + "\n")
-            exit()
+            sys.exit()
 
         if args.user:
             if args.time_start:

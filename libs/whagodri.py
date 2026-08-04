@@ -60,7 +60,7 @@ class WaBackup:
                 return token["Token"]
             else:
                 error(token)
-                quit()
+                sys.exit()
         else:
             print("Requesting access to Google...")
             token = gpsoauth.perform_master_login(
@@ -73,7 +73,7 @@ class WaBackup:
             else:
                 if "Token" not in token:
                     error(token)
-                    quit()
+                    sys.exit()
                 else:
                     print("Granted.")
                     oauth_token = token["Token"]
@@ -150,7 +150,7 @@ class WaBackup:
         driver.close()
         if not oauth_token:
             print("No valid token has been obtained.")
-            exit()
+            sys.exit()
 
         print("Requesting access to Google by OAuth cookie...")
         login_token = gpsoauth.perform_master_login_oauth(
@@ -160,7 +160,7 @@ class WaBackup:
         )
         if "Token" not in login_token:
             error(login_token)
-            quit()
+            sys.exit()
         else:
             print("Granted.")
             print("Writing Token in your settings.cfg file...")
@@ -184,7 +184,7 @@ class WaBackup:
         )
         if "Auth" not in auth:
             error(auth)
-            quit()
+            sys.exit()
 
         print("Granted.")
         global Auth, phone
@@ -212,8 +212,7 @@ class WaBackup:
         page_token = None
         while True:
             page = self.get_page(path, page_token)
-            for item in page[last_component]:
-                yield item
+            yield from page[last_component]
             if "nextPageToken" not in page:
                 break
             page_token = page["nextPageToken"]
@@ -294,7 +293,7 @@ def getConfigs():
             try:
                 password = getpass(f"Enter your password for {gmail}: ")
             except KeyboardInterrupt:
-                quit("\nCancelled!")
+                sys.exit("\nCancelled!")
 
         return {
             "gmail": gmail,
@@ -306,7 +305,7 @@ def getConfigs():
 
     except Exception as e:
         print(e)
-        quit(f'The "{cfg_file}" file is missing or corrupt!')
+        sys.exit(f'The "{cfg_file}" file is missing or corrupt!')
 
 
 def human_size(size):

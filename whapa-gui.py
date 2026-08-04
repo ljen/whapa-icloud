@@ -327,8 +327,8 @@ LANG = {
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("green")
 
-F11 = dict(size=11)
-F12 = dict(size=12)
+F11 = {"size": 11}
+F12 = {"size": 12}
 
 
 def tool(name):

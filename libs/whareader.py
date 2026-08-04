@@ -921,9 +921,9 @@ def _read_ios(con):
     for pk, sess, fme, gm, zdate, mtype, text, sid, st, fj, mi in con.execute(sql):
         kind, desc = codes.normalize(codes.IOS, mtype)
         chat_jid, _ = sessions.get(sess, (None, None))
-        mp = mv = mt = mla = mlo = msz = None
+        mp = mt = mla = mlo = msz = None
         if mi and mi in media:
-            mp, mv, mt, mla, mlo, msz = media[mi]
+            mp, _mv, mt, mla, mlo, msz = media[mi]
         out.append(
             Message(
                 row_id=pk,
@@ -953,7 +953,7 @@ def _read_ios(con):
 
 def _ios_chat_names(con):
     out = {}
-    for _pk, (jid, name) in _ios_sessions(con, _tables(con)).items():
+    for (jid, name) in _ios_sessions(con, _tables(con)).values():
         if jid:
             out[jid] = Contact(jid=jid, display_name=name)
     return out

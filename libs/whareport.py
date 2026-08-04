@@ -190,9 +190,7 @@ class Filter:
                 return False
 
         rx = self._pattern()
-        if rx and not rx.search(self.searchable_text(m)):
-            return False
-        return True
+        return not (rx and not rx.search(self.searchable_text(m)))
 
     def apply(self, messages: list[Message], chat_label: str = "") -> list[Message]:
         return [m for m in messages if self.match(m, chat_label)]

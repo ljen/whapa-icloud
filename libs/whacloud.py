@@ -9,7 +9,7 @@ whadeps.safe_console()
 
 import argparse
 import os
-import queue as queue
+import queue
 import sys
 import threading
 import time
@@ -254,7 +254,7 @@ def login():
         print("Two-factor authentication required.")
         code = input("Enter the code you received of one of your approved devices: ")
         result = api.validate_2fa_code(code)
-        print("Code validation result: %s" % result)
+        print(f"Code validation result: {result}")
 
         if not result:
             print("Failed to verify security code")
@@ -263,7 +263,7 @@ def login():
         if not api.is_trusted_session:
             print("Session is not trusted. Requesting trust...")
             result = api.trust_session()
-            print("Session trust result %s" % result)
+            print(f"Session trust result {result}")
 
             if not result:
                 print(
@@ -277,8 +277,7 @@ def login():
         devices = api.trusted_devices
         for i, device in enumerate(devices):
             print(
-                "  %s: %s"
-                % (i, device.get("deviceName", "SMS to %s" % device.get("phoneNumber")))
+                "  {}: {}".format(i, device.get("deviceName", "SMS to {}".format(device.get("phoneNumber"))))
             )
 
         device = click.prompt("Which device would you like to use?", default=0)
@@ -310,7 +309,7 @@ def getConfigs():
         passw = config.get("icloud-auth", "passw")
 
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        quit(f'The "{cfg_file}" file is missing or corrupt!')
+        sys.exit(f'The "{cfg_file}" file is missing or corrupt!')
 
 
 # Initializing

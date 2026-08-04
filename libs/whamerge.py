@@ -221,11 +221,11 @@ def merge(db_path, db_name):
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            exit()
+            sys.exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            exit()
+            sys.exit()
         print(
             f"[i] {len(list_dbs)} database found - make sure they are all msgstore databases"
         )
@@ -488,11 +488,11 @@ def merge_win(db_path, db_name):
         list_dbs = sorted(list_dbs, reverse=True)
         if len(list_dbs) < 2:
             print("[e] No databases to merge")
-            exit()
+            sys.exit()
 
         if not list_dbs:
             print("[e] Database not found in the path")
-            exit()
+            sys.exit()
         print(
             f"[i] {len(list_dbs)} database found - make sure they are all msgstore databases"
         )

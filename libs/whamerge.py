@@ -236,7 +236,7 @@ def merge(db_path, db_name):
                 shutil.copy(db_path + list_dbs[0], db_name)
                 print("   [+] Created " + db_name)
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print("[e] Error copying: ", e)
 
         num_message_cols = len(messages_columns)
@@ -503,7 +503,7 @@ def merge_win(db_path, db_name):
                 print("\n[i] Copying " + list_dbs[0] + " to " + db_name)
                 shutil.copy(db_path + list_dbs[0], db_name)
                 print("   [+] Created " + db_name)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print("[e] Error copying: ", e)
 
         num_message_cols = len(messages_columns)

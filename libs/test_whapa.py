@@ -44,7 +44,7 @@ def _db_android(path, n=60):
                 1,
                 1700000000000 + i * 1000,
                 0 if i % 3 else 66,
-                "t%d" % i,
+                f"t{i}",
                 1 if i == 5 else 0,
             ),
         )
@@ -71,7 +71,7 @@ def _db_ios(path, n=60):
                 None,
                 721692800 + i * 60,
                 0 if i % 3 else 46,
-                "t%d" % i,
+                f"t{i}",
                 "5E" + "0" * 18,
                 0,
                 None,
@@ -96,14 +96,17 @@ def test_cipher():
     d = tempfile.mkdtemp()
     src = os.path.join(d, "a.db")
     _db_android(src, 5)
-    original = open(src, "rb").read()
+    with open(src, "rb") as f:
+        original = f.read()
     clave = "aa" * 32
     enc, dec = os.path.join(d, "a.crypt15"), os.path.join(d, "b.db")
     whacipher.encrypt(src, clave, enc)
-    cab = whacipher.parse_header(open(enc, "rb").read())
+    with open(enc, "rb") as f:
+        cab = whacipher.parse_header(f.read())
     assert cab["version"] == "crypt15" and len(cab["iv"]) == 16
     whacipher.decrypt(enc, clave, dec)
-    assert open(dec, "rb").read() == original
+    with open(dec, "rb") as f:
+        assert f.read() == original
     print("  whacipher: crypt15 ida y vuelta byte a byte OK")
 
 
@@ -146,24 +149,26 @@ def test_filtros_e_informes():
     # interactive report: initial HTML should not grow with messages
     tam = []
     for n in (50, 5000):
-        q = os.path.join(d, "m%d.db" % n)
+        q = os.path.join(d, f"m{n}.db")
         _db_android(q, n)
-        r = report.build_report(reader.read(q), os.path.join(d, "r%d" % n))
+        r = report.build_report(reader.read(q), os.path.join(d, f"r{n}"))
         tam.append(r["shell_size"])
     assert abs(tam[0] - tam[1]) < 2000, "el HTML inicial crece con los mensajes"
     print("  whareport: informe interactivo de tamano constante OK")
 
-    # languages
+    # idiomas
     for lang, marca in (("ES", ">Buscar</button>"), ("EN", ">Search</button>")):
         r = report.build_report(ext, os.path.join(d, "l" + lang), lang=lang)
-        assert marca in open(r["path"], encoding="utf-8").read()
+        with open(r["path"], encoding="utf-8") as f:
+            assert marca in f.read()
     print("  whareport: informe en ES y EN OK")
 
     # printable with documented criteria
     flt = report.Filter(text="t1", direction="sent")
     out = os.path.join(d, "print.html")
     r = report.build_printable(ext, out, flt=flt, case_ref="REF-1", max_messages=999)
-    cuerpo = open(out, encoding="utf-8").read()
+    with open(out, encoding="utf-8") as f:
+        cuerpo = f.read()
     assert "<script" not in cuerpo, "el imprimible no debe llevar JavaScript"
     assert "@page" in cuerpo and "Criterios de selección" in cuerpo
     assert "«t1»" in cuerpo and "REF-1" in cuerpo
@@ -182,7 +187,8 @@ def test_filtros_e_informes():
     hits = report.search(ext, report.Filter(text="t1"))
     csvp = os.path.join(d, "h.csv")
     report.export_csv(hits, csvp)
-    cuerpo = open(csvp, encoding="utf-8-sig").read()
+    with open(csvp, encoding="utf-8-sig") as f:
+        cuerpo = f.read()
     assert cuerpo.startswith("n;chat;chat_jid;fecha_utc")
     assert len(cuerpo.strip().split("\n")) == len(hits) + 1
     print("  whareport: exportacion CSV OK")
@@ -210,12 +216,13 @@ def test_adjuntos():
             + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
         )
 
-    open(img, "wb").write(
-        b"\x89PNG\r\n\x1a\n"
-        + ch(b"IHDR", struct.pack(">IIBBBBB", 4, 4, 8, 2, 0, 0, 0))
-        + ch(b"IDAT", zlib.compress(raw))
-        + ch(b"IEND", b"")
-    )
+    with open(img, "wb") as f:
+        f.write(
+            b"\x89PNG\r\n\x1a\n"
+            + ch(b"IHDR", struct.pack(">IIBBBBB", 4, 4, 8, 2, 0, 0, 0))
+            + ch(b"IDAT", zlib.compress(raw))
+            + ch(b"IEND", b"")
+        )
     aud = os.path.join(wa, "Media", "WhatsApp Audio", "AUD-1.wav")
     with wave.open(aud, "wb") as w:
         w.setnchannels(1)
@@ -279,15 +286,15 @@ def test_adjuntos():
     assert "IMG-1.jpg" in copiados and "AUD-1.wav" in copiados
 
     # the attachment data travels in the report data file
-    datos = open(
-        os.path.join(d, "con", "data", "c0000_p0000.js"), encoding="utf-8"
-    ).read()
+    with open(os.path.join(d, "con", "data", "c0000_p0000.js"), encoding="utf-8") as f:
+        datos = f.read()
     assert "media/IMG-1.jpg" in datos and "media/AUD-1.wav" in datos
 
-    # The printable embeds the thumbnail and records the original route
+    # the printable embeds the thumbnail and leaves a record of the original path
     out = os.path.join(d, "print.html")
     report.build_printable(ext, out, media_root=wa, copy_media=True, max_messages=99)
-    cuerpo = open(out, encoding="utf-8").read()
+    with open(out, encoding="utf-8") as f:
+        cuerpo = f.read()
     assert 'class="thumb"' in cuerpo
     assert "Ruta en la base" in cuerpo and "archivo no localizado" in cuerpo
 
@@ -353,11 +360,11 @@ def test_ubicaciones():
     r = report.build_report(ext, os.path.join(d, "rep"))
     assert "function locHtml" in report.JS
     assert "openstreetmap.org" in report.JS and "google.com/maps" in report.JS
-    datos = open(
-        os.path.join(d, "rep", "data", "c0000_p0000.js"), encoding="utf-8"
-    ).read()
+    with open(os.path.join(d, "rep", "data", "c0000_p0000.js"), encoding="utf-8") as f:
+        datos = f.read()
     assert "36.72016" in datos
-    cuerpo = open(r["path"], encoding="utf-8").read()
+    with open(r["path"], encoding="utf-8") as f:
+        cuerpo = f.read()
     assert "staticmap" not in cuerpo, "el informe no debe pedir mapas al abrirse"
     assert 'src="http' not in cuerpo, "no debe haber recursos remotos en el HTML"
     print("  whareport: ubicaciones, KML y sin llamadas remotas OK")
@@ -369,13 +376,14 @@ def test_whachat_informes():
 
     d = tempfile.mkdtemp()
     chat = os.path.join(d, "Chat de WhatsApp con Juan.txt")
-    open(chat, "w", encoding="utf-8").write(
-        "25/8/20, 19:52:23 - Los mensajes y las llamadas estan cifrados de extremo a extremo.\n"
-        "25/8/20, 19:52:30 - Juan Perez: Buenas\n"
-        "25/8/20, 19:53:01 - Yo: te paso la foto\n"
-        "25/8/20, 19:53:15 - Yo: IMG-1.jpg (archivo adjunto)\n"
-        "25/8/20, 19:55:10 - Juan Perez: PTT-1.opus (archivo adjunto)\n"
-    )
+    with open(chat, "w", encoding="utf-8") as f:
+        f.write(
+            "25/8/20, 19:52:23 - Los mensajes y las llamadas estan cifrados de extremo a extremo.\n"
+            "25/8/20, 19:52:30 - Juan Perez: Buenas\n"
+            "25/8/20, 19:53:01 - Yo: te paso la foto\n"
+            "25/8/20, 19:53:15 - Yo: IMG-1.jpg (archivo adjunto)\n"
+            "25/8/20, 19:55:10 - Juan Perez: PTT-1.opus (archivo adjunto)\n"
+        )
     # attachments next to the chat, as exported by WhatsApp
     import struct
     import wave
@@ -391,12 +399,13 @@ def test_whachat_informes():
             + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
         )
 
-    open(os.path.join(d, "IMG-1.jpg"), "wb").write(
-        b"\x89PNG\r\n\x1a\n"
-        + ch(b"IHDR", struct.pack(">IIBBBBB", 4, 4, 8, 2, 0, 0, 0))
-        + ch(b"IDAT", zlib.compress(raw))
-        + ch(b"IEND", b"")
-    )
+    with open(os.path.join(d, "IMG-1.jpg"), "wb") as f:
+        f.write(
+            b"\x89PNG\r\n\x1a\n"
+            + ch(b"IHDR", struct.pack(">IIBBBBB", 4, 4, 8, 2, 0, 0, 0))
+            + ch(b"IDAT", zlib.compress(raw))
+            + ch(b"IEND", b"")
+        )
     with wave.open(os.path.join(d, "PTT-1.opus"), "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
@@ -437,7 +446,8 @@ def test_whachat_informes():
         if c != "csv":
             assert r["media_found"] == 2, (c, r)
     # the interactive report is the same engine
-    cuerpo = open(os.path.join(salida, "report", "index.html"), encoding="utf-8").read()
+    with open(os.path.join(salida, "report", "index.html"), encoding="utf-8") as f:
+        cuerpo = f.read()
     assert "function runSearch" in cuerpo and "function mediaHtml" in cuerpo
     print("  whachat: mismos informes que whapa OK")
 
@@ -574,6 +584,7 @@ def test_salida_por_defecto():
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     assert r.returncode == 0, r.stdout + r.stderr
     assert not os.path.exists(os.path.join(libs, "report")) or antes, (
@@ -594,6 +605,7 @@ def test_salida_por_defecto():
         text=True,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
     assert os.path.exists(os.path.join(trabajo, "report")), r.stdout
     print("  salida por defecto: nunca dentro de libs/ OK")
@@ -722,13 +734,15 @@ def test_remitente_en_grupo():
     # The report shows name and number
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
-    cuerpo = open(out, encoding="utf-8").read()
+    with open(out, encoding="utf-8") as f:
+        cuerpo = f.read()
     assert "Paco (34616362926)" in cuerpo
 
     # The CSV separates number and name
     csvp = os.path.join(d, "h.csv")
     report.export_csv(report.search(ext, report.Filter()), csvp)
-    lineas = open(csvp, encoding="utf-8-sig").read().splitlines()
+    with open(csvp, encoding="utf-8-sig") as f:
+        lineas = f.read().splitlines()
     assert "nombre_remitente" in lineas[0]
     assert "Paco" in lineas[1]
 
@@ -786,7 +800,8 @@ def test_texto_danado():
     # and the reports are generated without problem
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
-    assert "cambio el nombre" in open(out, encoding="utf-8").read()
+    with open(out, encoding="utf-8") as f:
+        assert "cambio el nombre" in f.read()
     report.export_csv(report.search(ext, report.Filter()), os.path.join(d, "h.csv"))
     print("  texto danado: no aborta y se conserva lo legible OK")
 
@@ -839,11 +854,13 @@ def test_estado_de_lectura():
     # appears in the printable and in the CSV
     out = os.path.join(d, "p.html")
     report.build_printable(ext, out, max_messages=99)
-    cuerpo = open(out, encoding="utf-8").read()
+    with open(out, encoding="utf-8") as f:
+        cuerpo = f.read()
     assert "Estado:" in cuerpo and "entregado a 2, leido por 1" in cuerpo
     csvp = os.path.join(d, "h.csv")
     report.export_csv(report.search(ext, report.Filter()), csvp)
-    cab = open(csvp, encoding="utf-8-sig").read().splitlines()[0]
+    with open(csvp, encoding="utf-8-sig") as f:
+        cab = f.read().splitlines()[0]
     for col in ("estado", "leido", "entregado_a", "leido_por"):
         assert col in cab
     print("  estado de entrega y lectura, tambien en grupos OK")
@@ -851,7 +868,8 @@ def test_estado_de_lectura():
 
 def test_gui_segura():
     gui = os.path.join(RAIZ, "whapa-gui.py")
-    fuente = open(gui, encoding="utf-8").read()
+    with open(gui, encoding="utf-8") as f:
+        fuente = f.read()
     import ast
 
     arbol = ast.parse(fuente)

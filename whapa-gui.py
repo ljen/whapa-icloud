@@ -37,6 +37,7 @@ import sys
 import threading
 import webbrowser
 from configparser import ConfigParser
+from typing import ClassVar
 
 try:
     from tkinter import filedialog, messagebox
@@ -364,7 +365,7 @@ class Field:
         if self._widget is not None:
             try:
                 return self._widget.get()
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
         return self._value
 
@@ -379,7 +380,7 @@ class Field:
             else:
                 # When you empty it, the track should be visible again
                 self._widget._activate_placeholder()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
 
@@ -514,7 +515,7 @@ class Row:
 class SettingsDialog(ctk.CTkToplevel):
     """Editor de cfg/settings.cfg: datos del informe y credenciales."""
 
-    CAMPOS = [
+    CAMPOS: ClassVar = [
         ("report", "company", "Empresa / Organismo"),
         ("report", "record", "Referencia del atestado"),
         ("report", "unit", "Unidad"),
@@ -528,7 +529,7 @@ class SettingsDialog(ctk.CTkToplevel):
         ("icloud-auth", "icloud", "Cuenta de iCloud"),
         ("icloud-auth", "passw", "Contrasena"),
     ]
-    SECCIONES = {
+    SECCIONES: ClassVar = {
         "report": "cfg_report",
         "google-auth": "cfg_google",
         "icloud-auth": "cfg_icloud",
@@ -556,7 +557,7 @@ class SettingsDialog(ctk.CTkToplevel):
         if os.path.exists(self.ruta):
             try:
                 cfg.read(self.ruta, encoding="utf-8")
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         fila = 0
@@ -619,7 +620,7 @@ class SettingsDialog(ctk.CTkToplevel):
         if os.path.exists(self.ruta):
             try:
                 cfg.read(self.ruta, encoding="utf-8")
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
         for (sec, clave), var in self.vars.items():
             if not cfg.has_section(sec):
@@ -647,7 +648,7 @@ class WhapaGUI(ctk.CTk):
         # 1024x768 a 1060x860 window pops out and the buttons are not visible.
         try:
             _sw, _sh = self.winfo_screenwidth(), self.winfo_screenheight()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _sw, _sh = 1280, 800
         self.geometry(f"{min(1060, _sw - 20)}x{min(860, _sh - 80)}")
         self.minsize(min(900, _sw - 40), min(640, _sh - 100))
@@ -675,7 +676,7 @@ class WhapaGUI(ctk.CTk):
         try:
             pantalla_ancho = self.winfo_screenwidth()
             pantalla_alto = self.winfo_screenheight()
-        except Exception:
+        except Exception:  # noqa: BLE001
             return
 
         def maximizada():
@@ -684,7 +685,7 @@ class WhapaGUI(ctk.CTk):
                     self.winfo_width() >= pantalla_ancho * 0.92
                     and self.winfo_height() >= pantalla_alto * 0.80
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001
                 return False
 
         for metodo in (
@@ -696,14 +697,14 @@ class WhapaGUI(ctk.CTk):
                 self.update_idletasks()
                 if maximizada():
                     return
-            except Exception:
+            except Exception:  # noqa: BLE001, S112
                 continue
 
         # Last resort: occupy the screen by hand, leaving room for the
         # taskbar.
         try:
             self.geometry(f"{pantalla_ancho}x{max(500, pantalla_alto - 70)}+0+0")
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     # ------------------------------------------------------------------
@@ -723,7 +724,7 @@ class WhapaGUI(ctk.CTk):
 
                 self._icon_img = tk.PhotoImage(file=png)
                 self.iconphoto(True, self._icon_img)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass  # the icon is a detail: it should never prevent starting
 
     def _switch_lang(self):
@@ -868,7 +869,7 @@ class WhapaGUI(ctk.CTk):
                 "selenium",
                 "Cryptodome",
             )
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
         detalle = (
             "\n\n{}: {}".format(self.T("missing"), ", ".join(faltan))
@@ -1522,7 +1523,7 @@ class WhapaGUI(ctk.CTk):
                 ),
                 "ok" if proc.returncode == 0 else "err",
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._emit(f"[e] {e}", "err")
         finally:
             self.q.put(("", "__done__"))
@@ -1565,7 +1566,7 @@ class WhapaGUI(ctk.CTk):
                 self._emit(
                     f"[fin] Proceso terminado con codigo {proc.returncode}.", "err"
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._emit(f"[e] No se pudo ejecutar: {e}", "err")
         finally:
             self.q.put(("", "__done__"))

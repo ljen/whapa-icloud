@@ -297,7 +297,7 @@ def decrypt_path(path, key_source, out_dir):
                 decrypt(os.path.join(path, f), key_source, out)
                 print(f"[-] {f} -> {out}")
                 done += 1
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"[e] {f}: {e}")
     print(f"[i] {done} bases descifradas")
 
@@ -422,7 +422,7 @@ def main():
                 sys.exit("[e] Indica -d para descifrar o -e para cifrar")
         else:
             sys.exit("[e] Indica un archivo con -f o un directorio con -p")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         sys.exit(f"[e] {e}")
 
 

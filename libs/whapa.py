@@ -97,7 +97,7 @@ def get_configs():
         for k in cfg:
             if parser.has_option("report", k):
                 cfg[k] = parser.get("report", k).strip().strip('"')
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
     return cfg
 
@@ -117,8 +117,10 @@ def parse_time(value):
         try:
             import datetime
 
-            d = datetime.datetime.strptime(value, fmt)
-            return int(d.replace(tzinfo=datetime.timezone.utc).timestamp())
+            d = datetime.datetime.strptime(value, fmt).replace(
+                tzinfo=datetime.timezone.utc
+            )
+            return int(d.timestamp())
         except ValueError:
             continue
     sys.exit(f"[e] Fecha no valida: {value} (usa dd-mm-yyyy HH:MM)")
@@ -718,7 +720,7 @@ def main():
 
     try:
         platform = args.platform or reader.detect_platform(args.database)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         sys.exit(f"[e] {e}")
 
     print(f"[i] Plataforma: {codes.PLATFORM_LABEL.get(platform, platform)}")

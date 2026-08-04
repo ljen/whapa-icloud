@@ -79,7 +79,7 @@ try:
         ctypes.c_void_p,
         ctypes.c_int,
     ]
-except Exception:
+except (OSError, AttributeError):
     _lib = None
 
 
@@ -212,7 +212,7 @@ def decrypt_media_tar(path, out_dir, backup_key):
         for m in t.getmembers():
             try:
                 entry_id = base64.urlsafe_b64decode(m.name)
-            except Exception:
+            except Exception:  # noqa: BLE001, S112
                 continue
             if len(entry_id) != 32 or m.size == 0:
                 continue
@@ -253,7 +253,7 @@ def is_media_tar(path):
         if head[:1] == b"\x83":
             return False
         return head[257:262] == b"ustar"
-    except Exception:
+    except OSError:
         return False
 
 

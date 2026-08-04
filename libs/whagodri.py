@@ -114,7 +114,7 @@ class WaBackup:
                 driver = webdriver.Chrome(
                     service=Service("chromedriver"), options=options
                 )
-        except Exception:
+        except Exception:  # noqa: BLE001
             driver = webdriver.Chrome(
                 service=Service(ChromeDriverManager().install()), options=options
             )
@@ -303,7 +303,7 @@ def getConfigs():
             "oauth_token": oauth_token,
         }
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(e)
         sys.exit(f'The "{cfg_file}" file is missing or corrupt!')
 
@@ -387,7 +387,7 @@ def backup_info(backup):
             )
         )
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(e)
 
 
@@ -535,7 +535,6 @@ def get_multiple_files_with_out_threads(files_dict: dict, is_dry_run: bool):
                     os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                     destination: io.BufferedWriter
                     with open(local_file_path, "bw") as destination:
-                        chunk: bytes
                         destination.writelines(response.iter_content(chunk_size=None))
                     print(
                         f"    [-] Number: {file_index}/{total_files} - {local_file_path} : Download Success"
@@ -673,7 +672,6 @@ def get_multiple_files_thread(
             os.makedirs(os.path.dirname(local), exist_ok=True)
             destination: io.BufferedWriter
             with open(local, "bw") as destination:
-                chunk: bytes
                 destination.writelines(response.iter_content(chunk_size=None))
             print(
                 f"    [-] Number: {now}/{len_files} - {thread_name} => Downloaded: {local}"
@@ -795,8 +793,7 @@ if __name__ == "__main__":
                     num_files = 0
                     total_size = 0
                     print("[i] Backup name: {}".format(backup["name"]))
-                    for file in wa_backup.backup_files(backup):
-                        num_files += 1
+                    for num_files, file in enumerate(wa_backup.backup_files(backup), 1):
                         total_size += int(file["sizeBytes"])
                         if (
                             os.path.sep.join(file["name"].split("/")[6:])
@@ -1007,7 +1004,7 @@ if __name__ == "__main__":
                 print(
                     f"\n[i] {num_files} files downloaded, total size {total_size} Bytes {human_size(total_size)}"
                 )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             if "401 Client Error" in str(e):
                 print(
                     "Unable to access the resource, your OAuth token configured in the settings file may have"

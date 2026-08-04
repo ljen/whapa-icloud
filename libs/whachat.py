@@ -77,7 +77,7 @@ def report(obj, html, local):
         shutil.copy("./images/app_icon.png", local + "cfg/app_icon.png")
         shutil.copy("./images/pdf_icon.png", local + "cfg/pdf_icon.png")
         shutil.copy("./images/vcard_icon.png", local + "cfg/vcard_icon.png")
-    except:
+    except Exception:  # noqa: BLE001, S110
         pass
 
     if report_var == "EN":
@@ -515,7 +515,7 @@ def get_configs():
         unit = config_report.get("report", "unit")
         examiner = config_report.get("report", "examiner")
         notes = config_report.get("report", "notes")
-    except Exception:
+    except Exception:  # noqa: BLE001
         print("The 'settings.cfg' file is missing or corrupt!")
 
 
@@ -558,7 +558,7 @@ def getDataPointiOS(line):
         date, time = dateTime.split(
             ", "
         )  # date = '8/25/20'; time = '10:02:14' # English mobile
-    except:
+    except ValueError:
         date, time = dateTime.split(
             " "
         )  # date = '8/25/20'; time = '10:02:14' # Spanish mobile
@@ -589,7 +589,7 @@ def getDataPointAndroid(line):
         date, time = dateTime.split(
             ", "
         )  # date = '5/23/18'; time = '15:24' # Unknown mobile
-    except:
+    except ValueError:
         date, time = dateTime.split(
             " "
         )  # date = '5/23/18'; time = '15:24' # English mobile
@@ -675,7 +675,7 @@ def getDataFrame(conversationPath, operating_system):
 
         df = pd.DataFrame(parsedData, columns=["Date", "Time", "Author", "Message"])
         return df
-    except Exception:
+    except Exception:  # noqa: BLE001
         print("[e] Error getting participants. Choose another operating system.")
         sys.exit()
 
@@ -777,7 +777,7 @@ def getAttachediOS(message):
                     + message.split("Location:")[1]
                     + f"</br><iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={lon}%2C{lat}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
                 )
-            except:
+            except IndexError:
                 message = (
                     "<br> "
                     + message.split("Ubicación:")[1]
@@ -886,7 +886,7 @@ def getAttachedAndroid(message):
                     + message.split("location")[1]
                     + f"</br><iframe width='300' height='150' id='gmap_canvas' src='https://maps.google.com/maps?q={lon}%2C{lat}&t=&z=15&ie=UTF8&iwloc=&output=embed' frameborder='0' scrolling='no' marginheight='0' marginwidth='0'></iframe>"
                 )
-            except:
+            except IndexError:
                 message = (
                     "<br> "
                     + message.split("ubicación")[1]
@@ -1074,7 +1074,7 @@ def messages(
                     )
                     print(message)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(
                 "\nError showing message details: {}, Message ID {}, Timestamp {}".format(
                     e, str(i), data["Date"][i] + ", " + data["Time"][i]

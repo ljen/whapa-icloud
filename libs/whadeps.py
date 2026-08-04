@@ -73,7 +73,7 @@ def require(*modulos, tool=None):
                     faltan.append(interno)
             elif m not in faltan:
                 faltan.append(m)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     if not faltan:
         return True
@@ -98,7 +98,7 @@ def check(*modulos):
             importlib.import_module(m)
         except ImportError:
             faltan.append(m)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     return faltan
 
@@ -123,12 +123,12 @@ def safe_console():
             continue
         try:
             es_terminal = flujo.isatty()
-        except Exception:
+        except (AttributeError, ValueError, OSError):
             es_terminal = False
         try:
             if es_terminal:
                 flujo.reconfigure(errors="replace")
             else:
                 flujo.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass  # flows that do not support reconfigure: left as is

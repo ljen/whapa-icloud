@@ -1181,9 +1181,7 @@ def _quote_text(m):
 def _reactions_text(m):
     if not m.reactions:
         return None
-    return " ".join(
-        "{}{}".format(r.emoji, "" if r.from_me else "") for r in m.reactions
-    )[:120]
+    return " ".join(r.emoji for r in m.reactions)[:120]
 
 
 def _serialize(m, sender_idx, href=None, maphref=None):
@@ -2219,7 +2217,7 @@ class MapDownloader:
             self.ok += 1
             self.cache[clave] = rel
             return rel
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.failed += 1
             self.cache[clave] = None
             return None

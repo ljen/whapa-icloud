@@ -3,7 +3,7 @@
 import ssl
 from collections.abc import Iterable, MutableMapping
 from dataclasses import dataclass
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 
 import requests
 from urllib3.poolmanager import PoolManager  # type: ignore
@@ -13,7 +13,7 @@ from . import google
 
 try:
     __version__ = version(__package__)
-except Exception:
+except (PackageNotFoundError, ValueError, TypeError):
     __version__ = "unknown"
 
 SSL_DEFAULT_CIPHERS = None

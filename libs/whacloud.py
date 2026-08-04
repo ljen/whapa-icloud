@@ -15,6 +15,7 @@ import threading
 import time
 from configparser import ConfigParser
 from os.path import splitext
+from textwrap import dedent
 
 from pyicloud import PyiCloudService
 
@@ -238,7 +239,7 @@ def getMultipleFilesThread(photo, local, now, lenfiles, threadName):
                         local, out_dir, bytes.fromhex(args.key)
                     )
                     print(f"    [+] Media extracted to: {out_dir}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 print(f"    [!] Failed to decrypt {local}: {e}")
 
     else:
@@ -351,7 +352,7 @@ if __name__ == "__main__":
     files = []
     cfg_file = system_slash(rf"{whapa_path}/cfg/settings.cfg")
     if not os.path.isfile(cfg_file):
-        create_settings_file()
+        createSettingsFile()
 
     if len(sys.argv) == 0:
         help()
@@ -361,8 +362,7 @@ if __name__ == "__main__":
         api = login()
         print("[i] Searching...")
         if args.sync:
-            for entries in api.photos.albums["WhatsApp"]:
-                files.append(entries)
+            files.extend(api.photos.albums["WhatsApp"])
 
             getMultipleFiles(api, files)
 
@@ -434,7 +434,7 @@ if __name__ == "__main__":
                                             local, out_dir, bytes.fromhex(args.key)
                                         )
                                         print(f"    [+] Media extracted to: {out_dir}")
-                                except Exception as e:
+                                except Exception as e:  # noqa: BLE001
                                     print(f"    [!] Failed to decrypt {local}: {e}")
 
                 else:

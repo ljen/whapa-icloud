@@ -13,7 +13,7 @@ class TestWhacipher(unittest.TestCase):
     @patch("sys.stdout", new_callable=StringIO)
     def test_banner(self, mock_stdout):
         banner()
-        self.assertIn("Whatsapp Encryption and Decryption", mock_stdout.getvalue())
+        self.assertIn("Whatsapp Cipher v2.00", mock_stdout.getvalue())
 
     @patch("sys.stdout", new_callable=StringIO)
     def test_help(self, mock_stdout):

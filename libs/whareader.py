@@ -953,7 +953,7 @@ def _read_ios(con):
 
 def _ios_chat_names(con):
     out = {}
-    for (jid, name) in _ios_sessions(con, _tables(con)).values():
+    for jid, name in _ios_sessions(con, _tables(con)).values():
         if jid:
             out[jid] = Contact(jid=jid, display_name=name)
     return out

@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from libs.whacloud import hkdf_legacy, is_media_tar
+from libs.whacloud_decrypt import hkdf_legacy, is_media_tar
 
 
 class TestHkdfLegacy(unittest.TestCase):

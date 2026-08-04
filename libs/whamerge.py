@@ -214,7 +214,7 @@ def merge(db_path, db_name):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(args.path):
+        for db_file in os.listdir(db_path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 
@@ -481,7 +481,7 @@ def merge_win(db_path, db_name):
         # catch all databases and sort
         list_dbs = []
 
-        for db_file in os.listdir(args.path):
+        for db_file in os.listdir(db_path):
             if ".db" == os.path.splitext(db_file)[1]:
                 list_dbs.append(db_file)
 

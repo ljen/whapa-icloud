@@ -3,9 +3,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "libs"))
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "libs")))
 import whagodri
 
 from libs.whagodri import human_size

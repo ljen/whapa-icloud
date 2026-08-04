@@ -5,7 +5,7 @@ import unittest
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+from libs.whacloud_decrypt import _pkcs7_strip, _safe_join, hkdf_v1
 
 
 class TestHkdfV1(unittest.TestCase):

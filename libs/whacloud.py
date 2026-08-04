@@ -277,7 +277,12 @@ def login():
         devices = api.trusted_devices
         for i, device in enumerate(devices):
             print(
-                "  {}: {}".format(i, device.get("deviceName", "SMS to {}".format(device.get("phoneNumber"))))
+                "  {}: {}".format(
+                    i,
+                    device.get(
+                        "deviceName", "SMS to {}".format(device.get("phoneNumber"))
+                    ),
+                )
             )
 
         device = click.prompt("Which device would you like to use?", default=0)

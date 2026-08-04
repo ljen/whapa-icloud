@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """
 whadeps.py - Arranque seguro de las herramientas
 
@@ -21,10 +20,10 @@ COMETIDO DE ESTE ARCHIVO
 ** Github: https://github.com/B16f00t
 """
 
-import os
-import sys
 import importlib
 import importlib.util
+import os
+import sys
 
 # module that is imported -> package that must be installed with pip
 PIP_NAME = {
@@ -80,13 +79,13 @@ def require(*modulos, tool=None):
         return True
 
     paquetes = [PIP_NAME.get(m, m) for m in faltan]
-    quien = " de {}".format(tool) if tool else ""
+    quien = f" de {tool}" if tool else ""
     print("\n[e] Faltan dependencias{}: {}".format(quien, ", ".join(faltan)))
     print("\n    Instala solo lo que falta:")
-    print("        {}".format(_orden_pip(paquetes)))
+    print(f"        {_orden_pip(paquetes)}")
     print("\n    O instala todas las dependencias del proyecto:")
     pip = "pip3" if sys.platform != "win32" else "pip"
-    print('        {} install --upgrade -r "{}"'.format(pip, _REQ))
+    print(f'        {pip} install --upgrade -r "{_REQ}"')
     print("\n    En la interfaz grafica tienes el boton «Instalar dependencias».\n")
     sys.exit(1)
 
@@ -132,4 +131,4 @@ def safe_console():
             else:
                 flujo.reconfigure(encoding="utf-8", errors="replace")
         except Exception:
-            pass          # flows that do not support reconfigure: left as is
+            pass  # flows that do not support reconfigure: left as is

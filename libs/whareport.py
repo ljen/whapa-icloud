@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """
 whareport.py - Generacion de informes y motor de filtrado
 
@@ -29,17 +28,16 @@ COMETIDO DE ESTE ARCHIVO
 ** Github: https://github.com/B16f00t
 """
 
+import csv
+import datetime
+import html
+import json
 import os
 import re
-import csv
-import json
-import html
-import datetime
 from dataclasses import dataclass, field
-from typing import Optional, Set, List
 
 import whacodes as codes
-from whareader import fmt_ts, infer_device, short_jid, Message, Chat
+from whareader import Chat, Message, fmt_ts, infer_device
 
 UTC = datetime.timezone.utc
 
@@ -47,8 +45,6 @@ UTC = datetime.timezone.utc
 # ========================================================================
 #  FILTERING AND SEARCH ENGINE
 # ========================================================================
-
-
 
 
 UTC = datetime.timezone.utc
@@ -59,8 +55,11 @@ def parse_date(v, end_of_day=False):
     if not v or not str(v).strip():
         return None
     v = str(v).strip()
-    for f, is_day in (("%Y-%m-%d %H:%M:%S", False), ("%Y-%m-%d %H:%M", False),
-                      ("%Y-%m-%d", True)):
+    for f, is_day in (
+        ("%Y-%m-%d %H:%M:%S", False),
+        ("%Y-%m-%d %H:%M", False),
+        ("%Y-%m-%d", True),
+    ):
         try:
             d = datetime.datetime.strptime(v, f).replace(tzinfo=UTC)
             if is_day and end_of_day:
@@ -68,31 +67,32 @@ def parse_date(v, end_of_day=False):
             return int(d.timestamp())
         except ValueError:
             continue
-    raise ValueError("Fecha no válida: {} (formato AAAA-MM-DD)".format(v))
+    raise ValueError(f"Fecha no válida: {v} (formato AAAA-MM-DD)")
 
 
 @dataclass
 class Filter:
     """Criterios de selección de mensajes."""
-    text: Optional[str] = None
+
+    text: str | None = None
     regex: bool = False
     case_sensitive: bool = False
     whole_word: bool = False
-    chat: Optional[str] = None
-    sender: Optional[str] = None
-    date_from: Optional[int] = None
-    date_to: Optional[int] = None
-    direction: Optional[str] = None        # 'sent' | 'received' | 'system'
-    kinds: Optional[Set[str]] = None       # codes.Kind values
-    raw_types: Optional[Set[int]] = None   # native platform codes
+    chat: str | None = None
+    sender: str | None = None
+    date_from: int | None = None
+    date_to: int | None = None
+    direction: str | None = None  # 'sent' | 'received' | 'system'
+    kinds: set[str] | None = None  # codes.Kind values
+    raw_types: set[int] | None = None  # native platform codes
     only_deleted: bool = False
     only_starred: bool = False
     only_media: bool = False
     only_forwarded: bool = False
     only_edited: bool = False
     only_location: bool = False
-    only_read: bool = False        # it is known that the recipient opened it
-    only_unread: bool = False      # there is no evidence that he opened it
+    only_read: bool = False  # it is known that the recipient opened it
+    only_unread: bool = False  # there is no evidence that he opened it
 
     _rx: object = field(default=None, repr=False, compare=False)
 
@@ -103,18 +103,32 @@ class Filter:
         flags = 0 if self.case_sensitive else re.IGNORECASE
         pat = self.text if self.regex else re.escape(self.text)
         if self.whole_word:
-            pat = r"\b(?:{})\b".format(pat)
+            pat = rf"\b(?:{pat})\b"
         object.__setattr__(self, "_rx", re.compile(pat, flags))
         return self._rx
 
     def is_empty(self):
         """True si no restringe nada."""
-        return not any([
-            self.text, self.chat, self.sender, self.date_from, self.date_to,
-            self.direction, self.kinds, self.raw_types, self.only_deleted,
-            self.only_starred, self.only_media, self.only_forwarded,
-            self.only_edited, self.only_location, self.only_read,
-            self.only_unread])
+        return not any(
+            [
+                self.text,
+                self.chat,
+                self.sender,
+                self.date_from,
+                self.date_to,
+                self.direction,
+                self.kinds,
+                self.raw_types,
+                self.only_deleted,
+                self.only_starred,
+                self.only_media,
+                self.only_forwarded,
+                self.only_edited,
+                self.only_location,
+                self.only_read,
+                self.only_unread,
+            ]
+        )
 
     # ------------------------------------------------------------------
     def searchable_text(self, m: Message) -> str:
@@ -169,7 +183,10 @@ class Filter:
 
         if self.chat:
             c = self.chat.lower()
-            if c not in (chat_label or "").lower() and c not in (m.chat_id or "").lower():
+            if (
+                c not in (chat_label or "").lower()
+                and c not in (m.chat_id or "").lower()
+            ):
                 return False
 
         rx = self._pattern()
@@ -177,11 +194,11 @@ class Filter:
             return False
         return True
 
-    def apply(self, messages: List[Message], chat_label: str = "") -> List[Message]:
+    def apply(self, messages: list[Message], chat_label: str = "") -> list[Message]:
         return [m for m in messages if self.match(m, chat_label)]
 
     # ------------------------------------------------------------------
-    def describe(self) -> List[tuple]:
+    def describe(self) -> list[tuple]:
         """Criterios aplicados, en forma legible (etiqueta, valor)."""
         out = []
         if self.text:
@@ -192,8 +209,14 @@ class Filter:
                 modo.append("distingue mayúsculas")
             if self.whole_word:
                 modo.append("palabra completa")
-            out.append(("Texto buscado", "«{}»{}".format(
-                self.text, " ({})".format(", ".join(modo)) if modo else "")))
+            out.append(
+                (
+                    "Texto buscado",
+                    "«{}»{}".format(
+                        self.text, " ({})".format(", ".join(modo)) if modo else ""
+                    ),
+                )
+            )
         if self.chat:
             out.append(("Chat contiene", self.chat))
         if self.sender:
@@ -203,22 +226,41 @@ class Filter:
         if self.date_to:
             out.append(("Hasta", fmt_ts(self.date_to) + " UTC"))
         if self.direction:
-            out.append(("Dirección", {"sent": "enviados por el usuario",
-                                      "received": "recibidos",
-                                      "system": "mensajes del sistema"}[self.direction]))
+            out.append(
+                (
+                    "Dirección",
+                    {
+                        "sent": "enviados por el usuario",
+                        "received": "recibidos",
+                        "system": "mensajes del sistema",
+                    }[self.direction],
+                )
+            )
         if self.kinds:
-            out.append(("Tipos incluidos", ", ".join(sorted(
-                codes.KIND_LABEL.get(codes.Kind(k), k) for k in self.kinds))))
+            out.append(
+                (
+                    "Tipos incluidos",
+                    ", ".join(
+                        sorted(
+                            codes.KIND_LABEL.get(codes.Kind(k), k) for k in self.kinds
+                        )
+                    ),
+                )
+            )
         if self.raw_types:
-            out.append(("Códigos nativos", ", ".join(str(t) for t in sorted(self.raw_types))))
-        for flag, label in ((self.only_deleted, "Solo mensajes borrados"),
-                            (self.only_starred, "Solo mensajes destacados"),
-                            (self.only_media, "Solo mensajes con archivo adjunto"),
-                            (self.only_forwarded, "Solo mensajes reenviados"),
-                            (self.only_edited, "Solo mensajes editados"),
-                            (self.only_location, "Solo mensajes con coordenadas"),
-                            (self.only_read, "Solo mensajes que consta que se leyeron"),
-                            (self.only_unread, "Solo mensajes sin confirmacion de lectura")):
+            out.append(
+                ("Códigos nativos", ", ".join(str(t) for t in sorted(self.raw_types)))
+            )
+        for flag, label in (
+            (self.only_deleted, "Solo mensajes borrados"),
+            (self.only_starred, "Solo mensajes destacados"),
+            (self.only_media, "Solo mensajes con archivo adjunto"),
+            (self.only_forwarded, "Solo mensajes reenviados"),
+            (self.only_edited, "Solo mensajes editados"),
+            (self.only_location, "Solo mensajes con coordenadas"),
+            (self.only_read, "Solo mensajes que consta que se leyeron"),
+            (self.only_unread, "Solo mensajes sin confirmacion de lectura"),
+        ):
             if flag:
                 out.append((label, "sí"))
         return out
@@ -243,29 +285,52 @@ class Hit:
         if not mo:
             return txt[:width]
         a = max(0, mo.start() - width // 3)
-        return ("…" if a else "") + txt[a:a + width] + ("…" if a + width < len(txt) else "")
+        return (
+            ("…" if a else "")
+            + txt[a : a + width]
+            + ("…" if a + width < len(txt) else "")
+        )
 
 
-def search(extraction, flt: Filter) -> List[Hit]:
+def search(extraction, flt: Filter) -> list[Hit]:
     """Aplica el filtro a toda la extracción y devuelve las coincidencias."""
     hits = []
     for c in extraction.chats():
         for m in c.messages:
             if flt.match(m, c.label):
                 hits.append(Hit(chat_id=c.chat_id, chat_label=c.label, message=m))
-    hits.sort(key=lambda h: (h.message.timestamp or 0))
+    hits.sort(key=lambda h: h.message.timestamp or 0)
     return hits
 
 
-CSV_COLUMNS = ["n", "chat", "chat_jid", "fecha_utc", "direccion", "remitente",
-               "nombre_remitente", "estado", "leido",
-               "entregado_a", "leido_por",
-               "tipo", "codigo_tipo", "borrado", "destacado", "reenviado",
-               "editado", "texto", "archivo", "latitud", "longitud",
-               "key_id", "dispositivo_inferido"]
+CSV_COLUMNS = [
+    "n",
+    "chat",
+    "chat_jid",
+    "fecha_utc",
+    "direccion",
+    "remitente",
+    "nombre_remitente",
+    "estado",
+    "leido",
+    "entregado_a",
+    "leido_por",
+    "tipo",
+    "codigo_tipo",
+    "borrado",
+    "destacado",
+    "reenviado",
+    "editado",
+    "texto",
+    "archivo",
+    "latitud",
+    "longitud",
+    "key_id",
+    "dispositivo_inferido",
+]
 
 
-def export_csv(hits: List[Hit], path: str):
+def export_csv(hits: list[Hit], path: str):
     """Vuelca las coincidencias a CSV, para cadena de análisis o anexo."""
     with open(path, "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh, delimiter=";", quoting=csv.QUOTE_MINIMAL)
@@ -273,21 +338,35 @@ def export_csv(hits: List[Hit], path: str):
         for i, h in enumerate(hits, 1):
             m = h.message
             is_sys = m.kind is codes.Kind.SYSTEM or bool(m.system_action)
-            w.writerow([
-                i, h.chat_label, h.chat_id, fmt_ts(m.timestamp),
-                "sistema" if is_sys else ("enviado" if m.from_me else "recibido"),
-                m.sender or "", m.sender_name or "",
-                m.status_desc or "", "si" if m.leido else "",
-                m.delivered_to or "", m.read_by or "", m.type_desc,
-                m.raw_type if m.raw_type is not None else "",
-                "sí" if m.is_deleted else "", "sí" if m.starred else "",
-                "sí" if m.is_forwarded else "", "sí" if m.edited else "",
-                (m.text or m.media_caption or m.system_action or ""),
-                m.media_path or "", m.latitude if m.latitude is not None else "",
-                m.longitude if m.longitude is not None else "",
-                m.key_id or "", infer_device(m.key_id),
-            ])
+            w.writerow(
+                [
+                    i,
+                    h.chat_label,
+                    h.chat_id,
+                    fmt_ts(m.timestamp),
+                    "sistema" if is_sys else ("enviado" if m.from_me else "recibido"),
+                    m.sender or "",
+                    m.sender_name or "",
+                    m.status_desc or "",
+                    "si" if m.leido else "",
+                    m.delivered_to or "",
+                    m.read_by or "",
+                    m.type_desc,
+                    m.raw_type if m.raw_type is not None else "",
+                    "sí" if m.is_deleted else "",
+                    "sí" if m.starred else "",
+                    "sí" if m.is_forwarded else "",
+                    "sí" if m.edited else "",
+                    (m.text or m.media_caption or m.system_action or ""),
+                    m.media_path or "",
+                    m.latitude if m.latitude is not None else "",
+                    m.longitude if m.longitude is not None else "",
+                    m.key_id or "",
+                    infer_device(m.key_id),
+                ]
+            )
     return path
+
 
 # ========================================================================
 #  VIEWER RESOURCES (CSS + JAVASCRIPT)
@@ -1070,9 +1149,7 @@ function boot(){
 # ========================================================================
 
 
-
-
-PAGE_SIZE = 500          # messages per data file
+PAGE_SIZE = 500  # messages per data file
 SINGLE_FILE_LIMIT = 20000
 
 
@@ -1100,14 +1177,15 @@ def _quote_text(m):
     q = m.quote
     who = q.sender or ""
     body = q.text or (q.type_desc or "")
-    return ("↩ {}: {}".format(who, body) if who else "↩ {}".format(body))[:300]
+    return (f"↩ {who}: {body}" if who else f"↩ {body}")[:300]
 
 
 def _reactions_text(m):
     if not m.reactions:
         return None
-    return " ".join("{}{}".format(r.emoji, "" if r.from_me else "")
-                    for r in m.reactions)[:120]
+    return " ".join(
+        "{}{}".format(r.emoji, "" if r.from_me else "") for r in m.reactions
+    )[:120]
 
 
 def _serialize(m, sender_idx, href=None, maphref=None):
@@ -1119,7 +1197,7 @@ def _serialize(m, sender_idx, href=None, maphref=None):
         # "Name (number)" is saved when there is a name: the report must allow
         # identify the person without losing the original database data.
         if m.sender_name and m.sender and m.sender_name != m.sender:
-            quien = "{} ({})".format(m.sender_name, m.sender)
+            quien = f"{m.sender_name} ({m.sender})"
         si = sender_idx.setdefault(quien, len(sender_idx))
     return [
         m.row_id,
@@ -1135,18 +1213,20 @@ def _serialize(m, sender_idx, href=None, maphref=None):
         m.longitude,
         _quote_text(m),
         _reactions_text(m),
-        href,                       # 13: URL of the attachment, if located
-        maphref,                    # 14: Local map URL, if downloaded
-        m.status_desc or None,      # 15: delivery/read status
-        1 if m.leido else 0,        # 16: it appears that it was opened
+        href,  # 13: URL of the attachment, if located
+        maphref,  # 14: Local map URL, if downloaded
+        m.status_desc or None,  # 15: delivery/read status
+        1 if m.leido else 0,  # 16: it appears that it was opened
     ]
 
 
 def _type_table(platform):
     """Diccionario rawType -> descripción, enviado una sola vez."""
-    table = {codes.ANDROID: codes.ANDROID_MESSAGE_TYPE,
-             codes.ANDROID_LEGACY: codes.ANDROID_MEDIA_WA_TYPE,
-             codes.IOS: codes.IOS_ZMESSAGETYPE}.get(platform, {})
+    table = {
+        codes.ANDROID: codes.ANDROID_MESSAGE_TYPE,
+        codes.ANDROID_LEGACY: codes.ANDROID_MEDIA_WA_TYPE,
+        codes.IOS: codes.IOS_ZMESSAGETYPE,
+    }.get(platform, {})
     return {str(k): v[1] for k, v in table.items()}
 
 
@@ -1166,72 +1246,128 @@ def _stats_html(stats, extraction, platform):
         rows.append(("Primer mensaje", fmt_ts(stats["first_ts"]) + " UTC"))
     if stats["last_ts"]:
         rows.append(("Último mensaje", fmt_ts(stats["last_ts"]) + " UTC"))
-    rows.append(("Informe generado",
-                 datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S") + " UTC"))
+    rows.append(
+        (
+            "Informe generado",
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            + " UTC",
+        )
+    )
 
-    t1 = "".join("<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(k)),
-                                                          html.escape(str(v)))
-                 for k, v in rows)
+    t1 = "".join(
+        f"<tr><td>{html.escape(str(k))}</td><td>{html.escape(str(v))}</td></tr>"
+        for k, v in rows
+    )
 
     # chain of custody
     t2 = ""
     if extraction.source_files:
-        t2 = ("<h3>Origen y verificación</h3><table>"
-              "<tr><th>Archivo</th><th>Tamaño</th><th>SHA-256</th></tr>")
+        t2 = (
+            "<h3>Origen y verificación</h3><table>"
+            "<tr><th>Archivo</th><th>Tamaño</th><th>SHA-256</th></tr>"
+        )
         for s in extraction.source_files:
             t2 += "<tr><td>{}</td><td>{:,} B</td><td class='mono'>{}</td></tr>".format(
-                html.escape(s["name"]), s["size"], s["sha256"])
+                html.escape(s["name"]), s["size"], s["sha256"]
+            )
         t2 += "</table>"
 
     pills = "".join(
-        '<span class="pill">{}: {}</span>'.format(
-            html.escape(codes.KIND_LABEL.get(codes.Kind(k), k)), v)
-        for k, v in stats["by_kind"].items())
+        f'<span class="pill">{html.escape(codes.KIND_LABEL.get(codes.Kind(k), k))}: {v}</span>'
+        for k, v in stats["by_kind"].items()
+    )
 
-    years = "".join('<span class="pill">{}: {}</span>'.format(y, n)
-                    for y, n in stats["by_year"].items())
+    years = "".join(
+        f'<span class="pill">{y}: {n}</span>' for y, n in stats["by_year"].items()
+    )
 
-    return ("<h3>Resumen</h3><table>{}</table>{}"
-            "<h3>Mensajes por tipo</h3>{}"
-            "<h3>Mensajes por año</h3>{}").format(t1, t2, pills, years)
+    return (
+        f"<h3>Resumen</h3><table>{t1}</table>{t2}"
+        f"<h3>Mensajes por tipo</h3>{pills}"
+        f"<h3>Mensajes por año</h3>{years}"
+    )
 
 
 # Viewer labels in the two languages ​​supported by whapa (-r EN|ES)
 _T = {
-    "ES": {"filter_chats": "Filtrar chats…", "search_chat": "Buscar en este chat (Intro)",
-           "search": "Buscar", "filters": "Filtros", "print_chat": "Imprimir chat",
-           "summary": "Ver resumen y verificación", "text": "Texto", "scope": "Ámbito",
-           "this_chat": "Solo este chat", "all_chats": "Todos los chats",
-           "sender": "Remitente", "from": "Desde", "to": "Hasta",
-           "direction": "Dirección", "all": "Todas", "sent": "Enviados",
-           "received": "Recibidos", "system": "Del sistema", "type": "Tipo de mensaje",
-           "regex": "Expresión regular", "case": "Distinguir mayúsculas",
-           "word": "Palabra completa", "only_del": "Solo borrados",
-           "only_star": "Solo destacados", "only_media": "Solo con adjunto",
-           "only_fwd": "Solo reenviados", "only_edit": "Solo editados",
-           "only_loc": "Solo con coordenadas", "clear": "Limpiar",
-           "print_res": "Imprimir resultados", "export": "Exportar CSV",
-           "hint": "La búsqueda global recorre todas las páginas de datos; "
-                   "en volcados grandes puede tardar unos segundos.",
-           "ph_text": "contenido, pie de foto, archivo o cita",
-           "ph_sender": "número o nombre", "messages": "mensajes", "chats": "chats"},
-    "EN": {"filter_chats": "Filter chats…", "search_chat": "Search this chat (Enter)",
-           "search": "Search", "filters": "Filters", "print_chat": "Print chat",
-           "summary": "View summary and verification", "text": "Text", "scope": "Scope",
-           "this_chat": "This chat only", "all_chats": "All chats",
-           "sender": "Sender", "from": "From", "to": "To",
-           "direction": "Direction", "all": "All", "sent": "Sent",
-           "received": "Received", "system": "System", "type": "Message type",
-           "regex": "Regular expression", "case": "Case sensitive",
-           "word": "Whole word", "only_del": "Deleted only",
-           "only_star": "Starred only", "only_media": "With attachment only",
-           "only_fwd": "Forwarded only", "only_edit": "Edited only",
-           "only_loc": "With coordinates only", "clear": "Clear",
-           "print_res": "Print results", "export": "Export CSV",
-           "hint": "Global search scans every data page; it may take a few "
-                   "seconds on large dumps.",
-           "ph_text": "content, caption, file name or quote",
-           "ph_sender": "number or name", "messages": "messages", "chats": "chats"},
+    "ES": {
+        "filter_chats": "Filtrar chats…",
+        "search_chat": "Buscar en este chat (Intro)",
+        "search": "Buscar",
+        "filters": "Filtros",
+        "print_chat": "Imprimir chat",
+        "summary": "Ver resumen y verificación",
+        "text": "Texto",
+        "scope": "Ámbito",
+        "this_chat": "Solo este chat",
+        "all_chats": "Todos los chats",
+        "sender": "Remitente",
+        "from": "Desde",
+        "to": "Hasta",
+        "direction": "Dirección",
+        "all": "Todas",
+        "sent": "Enviados",
+        "received": "Recibidos",
+        "system": "Del sistema",
+        "type": "Tipo de mensaje",
+        "regex": "Expresión regular",
+        "case": "Distinguir mayúsculas",
+        "word": "Palabra completa",
+        "only_del": "Solo borrados",
+        "only_star": "Solo destacados",
+        "only_media": "Solo con adjunto",
+        "only_fwd": "Solo reenviados",
+        "only_edit": "Solo editados",
+        "only_loc": "Solo con coordenadas",
+        "clear": "Limpiar",
+        "print_res": "Imprimir resultados",
+        "export": "Exportar CSV",
+        "hint": "La búsqueda global recorre todas las páginas de datos; "
+        "en volcados grandes puede tardar unos segundos.",
+        "ph_text": "contenido, pie de foto, archivo o cita",
+        "ph_sender": "número o nombre",
+        "messages": "mensajes",
+        "chats": "chats",
+    },
+    "EN": {
+        "filter_chats": "Filter chats…",
+        "search_chat": "Search this chat (Enter)",
+        "search": "Search",
+        "filters": "Filters",
+        "print_chat": "Print chat",
+        "summary": "View summary and verification",
+        "text": "Text",
+        "scope": "Scope",
+        "this_chat": "This chat only",
+        "all_chats": "All chats",
+        "sender": "Sender",
+        "from": "From",
+        "to": "To",
+        "direction": "Direction",
+        "all": "All",
+        "sent": "Sent",
+        "received": "Received",
+        "system": "System",
+        "type": "Message type",
+        "regex": "Regular expression",
+        "case": "Case sensitive",
+        "word": "Whole word",
+        "only_del": "Deleted only",
+        "only_star": "Starred only",
+        "only_media": "With attachment only",
+        "only_fwd": "Forwarded only",
+        "only_edit": "Edited only",
+        "only_loc": "With coordinates only",
+        "clear": "Clear",
+        "print_res": "Print results",
+        "export": "Export CSV",
+        "hint": "Global search scans every data page; it may take a few "
+        "seconds on large dumps.",
+        "ph_text": "content, caption, file name or quote",
+        "ph_sender": "number or name",
+        "messages": "messages",
+        "chats": "chats",
+    },
 }
 
 _SHELL = """<!DOCTYPE html>
@@ -1344,9 +1480,18 @@ def _tvars(lang):
     return {"t_" + k: v for k, v in _T.get(lang, _T["ES"]).items()}
 
 
-def build_report(extraction, out_path, title="Informe forense WhatsApp",
-                 single_file=False, page_size=PAGE_SIZE, lang="ES", flt=None,
-                 media_root=None, copy_media=False, maps=False):
+def build_report(
+    extraction,
+    out_path,
+    title="Informe forense WhatsApp",
+    single_file=False,
+    page_size=PAGE_SIZE,
+    lang="ES",
+    flt=None,
+    media_root=None,
+    copy_media=False,
+    maps=False,
+):
     """Genera el informe interactivo.
 
     out_path : carpeta, o archivo .html si single_file
@@ -1366,76 +1511,118 @@ def build_report(extraction, out_path, title="Informe forense WhatsApp",
         for c in chats:
             msgs = [m for m in c.messages if flt.match(m, c.label)]
             if msgs:
-                recortados.append(Chat(chat_id=c.chat_id, name=c.name,
-                                       is_group=c.is_group, messages=msgs))
+                recortados.append(
+                    Chat(
+                        chat_id=c.chat_id,
+                        name=c.name,
+                        is_group=c.is_group,
+                        messages=msgs,
+                    )
+                )
         chats = recortados
     stats = extraction.summary()
     platform = extraction.platform
 
-    base_dir = out_path if not single_file else os.path.dirname(
-        os.path.abspath(out_path)) or "."
+    base_dir = (
+        out_path
+        if not single_file
+        else os.path.dirname(os.path.abspath(out_path)) or "."
+    )
     resolver = MediaResolver(media_root, "media" if copy_media else None)
     mapas = MapDownloader(maps)
     if media_root or maps:
         os.makedirs(base_dir, exist_ok=True)
 
-    chat_meta, pages_data = [], []      # pages_data: (ci, pi, json)
+    chat_meta, pages_data = [], []  # pages_data: (ci, pi, json)
     for ci, c in enumerate(chats):
         sender_idx = {}
-        rows = [_serialize(m, sender_idx,
-                           resolver.resolve(m.media_path, base_dir)
-                           if (media_root and m.media_path) else None,
-                           mapas.fetch(m.latitude, m.longitude, base_dir))
-                for m in c.messages]
+        rows = [
+            _serialize(
+                m,
+                sender_idx,
+                resolver.resolve(m.media_path, base_dir)
+                if (media_root and m.media_path)
+                else None,
+                mapas.fetch(m.latitude, m.longitude, base_dir),
+            )
+            for m in c.messages
+        ]
         n_pages = max(1, (len(rows) + page_size - 1) // page_size)
         for pi in range(n_pages):
-            chunk = rows[pi * page_size:(pi + 1) * page_size]
-            pages_data.append((ci, pi, json.dumps(chunk, ensure_ascii=False,
-                                                  separators=(",", ":"))))
+            chunk = rows[pi * page_size : (pi + 1) * page_size]
+            pages_data.append(
+                (ci, pi, json.dumps(chunk, ensure_ascii=False, separators=(",", ":")))
+            )
         senders = [None] * len(sender_idx)
         for name, idx in sender_idx.items():
             senders[idx] = name
-        chat_meta.append({
-            "name": c.label, "group": c.is_group, "n": len(c.messages),
-            "pages": n_pages, "senders": senders,
-            "est": min(900, 60 * min(len(c.messages), 15)),
-            "last": fmt_ts(c.last_ts)[:10] if c.last_ts else "",
-        })
+        chat_meta.append(
+            {
+                "name": c.label,
+                "group": c.is_group,
+                "n": len(c.messages),
+                "pages": n_pages,
+                "senders": senders,
+                "est": min(900, 60 * min(len(c.messages), 15)),
+                "last": fmt_ts(c.last_ts)[:10] if c.last_ts else "",
+            }
+        )
 
     incluidos = sum(len(c.messages) for c in chats)
     stats = dict(stats)
     stats["shown"] = incluidos
-    stats["filter"] = flt.describe() if (flt is not None and not flt.is_empty()) else None
+    stats["filter"] = (
+        flt.describe() if (flt is not None and not flt.is_empty()) else None
+    )
 
-    index_js = ("WHAPA.meta={meta};WHAPA.types={types};WHAPA.chats={chats};"
-                "WHAPA.single={single};").format(
+    index_js = (
+        "WHAPA.meta={meta};WHAPA.types={types};WHAPA.chats={chats};"
+        "WHAPA.single={single};"
+    ).format(
         meta=json.dumps({"platform": platform, "title": title}, ensure_ascii=False),
         types=json.dumps(_type_table(platform), ensure_ascii=False),
         chats=json.dumps(chat_meta, ensure_ascii=False, separators=(",", ":")),
-        single="true" if single_file else "false")
+        single="true" if single_file else "false",
+    )
 
     stats_html = _stats_html(stats, extraction, platform)
     subtitle = "{} · {} {} · {} {}".format(
-        codes.PLATFORM_LABEL.get(platform, platform), incluidos,
-        _T[lang]["messages"], len(chats), _T[lang]["chats"])
+        codes.PLATFORM_LABEL.get(platform, platform),
+        incluidos,
+        _T[lang]["messages"],
+        len(chats),
+        _T[lang]["chats"],
+    )
     if stats.get("filter"):
-        subtitle += " · " + " · ".join("{}: {}".format(k, v) for k, v in stats["filter"])
+        subtitle += " · " + " · ".join(f"{k}: {v}" for k, v in stats["filter"])
 
     if single_file:
         inline = ["<script>" + index_js + "</script>"]
         for ci, pi, payload in pages_data:
-            inline.append("<script>WHAPA.recv({},{},{});</script>".format(ci, pi, payload))
+            inline.append(f"<script>WHAPA.recv({ci},{pi},{payload});</script>")
         htmlout = _SHELL.format(
-            title=html.escape(title), css=CSS, js=JS, stats=stats_html,
-            subtitle=html.escape(subtitle), index_src="",
-            inline_data="\n".join(inline), **_tvars(lang))
+            title=html.escape(title),
+            css=CSS,
+            js=JS,
+            stats=stats_html,
+            subtitle=html.escape(subtitle),
+            index_src="",
+            inline_data="\n".join(inline),
+            **_tvars(lang),
+        )
         htmlout = htmlout.replace('<script src=""></script>', "")
         with open(out_path, "w", encoding="utf-8") as fh:
             fh.write(htmlout)
-        return {"mode": "single", "path": out_path,
-                "size": os.path.getsize(out_path), "pages": len(pages_data),
-                "media_found": resolver.found, "media_missing": resolver.missing,
-                "maps_ok": mapas.ok, "maps_failed": mapas.failed}
+        return {
+            "mode": "single",
+            "path": out_path,
+            "size": os.path.getsize(out_path),
+            "pages": len(pages_data),
+            "media_found": resolver.found,
+            "media_missing": resolver.missing,
+            "maps_ok": mapas.ok,
+            "maps_failed": mapas.failed,
+        }
 
     # --- folder mode ---
     os.makedirs(out_path, exist_ok=True)
@@ -1445,30 +1632,44 @@ def build_report(extraction, out_path, title="Informe forense WhatsApp",
     with open(os.path.join(data_dir, "index.js"), "w", encoding="utf-8") as fh:
         fh.write(index_js)
     for ci, pi, payload in pages_data:
-        fn = os.path.join(data_dir, "c{:04d}_p{:04d}.js".format(ci, pi))
+        fn = os.path.join(data_dir, f"c{ci:04d}_p{pi:04d}.js")
         with open(fn, "w", encoding="utf-8") as fh:
-            fh.write("WHAPA.recv({},{},{});".format(ci, pi, payload))
+            fh.write(f"WHAPA.recv({ci},{pi},{payload});")
 
     index_path = os.path.join(out_path, "index.html")
     with open(index_path, "w", encoding="utf-8") as fh:
-        fh.write(_SHELL.format(
-            title=html.escape(title), css=CSS, js=JS, stats=stats_html,
-            subtitle=html.escape(subtitle), index_src="data/index.js",
-            inline_data="", **_tvars(lang)))
+        fh.write(
+            _SHELL.format(
+                title=html.escape(title),
+                css=CSS,
+                js=JS,
+                stats=stats_html,
+                subtitle=html.escape(subtitle),
+                index_src="data/index.js",
+                inline_data="",
+                **_tvars(lang),
+            )
+        )
 
-    total = sum(os.path.getsize(os.path.join(data_dir, f))
-                for f in os.listdir(data_dir))
-    return {"mode": "folder", "path": index_path,
-            "shell_size": os.path.getsize(index_path),
-            "data_size": total, "pages": len(pages_data),
-            "media_found": resolver.found, "media_missing": resolver.missing,
-            "maps_ok": mapas.ok, "maps_failed": mapas.failed}
+    total = sum(
+        os.path.getsize(os.path.join(data_dir, f)) for f in os.listdir(data_dir)
+    )
+    return {
+        "mode": "folder",
+        "path": index_path,
+        "shell_size": os.path.getsize(index_path),
+        "data_size": total,
+        "pages": len(pages_data),
+        "media_found": resolver.found,
+        "media_missing": resolver.missing,
+        "maps_ok": mapas.ok,
+        "maps_failed": mapas.failed,
+    }
+
 
 # ========================================================================
 #  PRINTABLE REPORT
 # ========================================================================
-
-
 
 
 PRINT_CSS = """
@@ -1521,7 +1722,7 @@ def _remitente(m):
     if m.from_me:
         return "—"
     if m.sender_name and m.sender and m.sender_name != m.sender:
-        return "{} ({})".format(m.sender_name, m.sender)
+        return f"{m.sender_name} ({m.sender})"
     return m.sender or ""
 
 
@@ -1538,41 +1739,56 @@ def _content_cell(m, show_ids, href=None):
     if m.quote:
         q = m.quote
         who = (q.sender + ": ") if q.sender else ""
-        parts.append('<span class="q">↩ {}{}</span>'.format(
-            html.escape(who), html.escape((q.text or q.type_desc or "")[:300])))
+        parts.append(
+            '<span class="q">↩ {}{}</span>'.format(
+                html.escape(who), html.escape((q.text or q.type_desc or "")[:300])
+            )
+        )
     body = m.text or m.media_caption or m.system_action or ""
     if not body:
-        body = "[{}]".format(m.type_desc)
+        body = f"[{m.type_desc}]"
     parts.append(html.escape(body))
     if m.media_path:
         if href and media_kind_from_name(href) == "image":
-            parts.append('<img class="thumb" src="{}" alt="">'.format(html.escape(href)))
+            parts.append(f'<img class="thumb" src="{html.escape(href)}" alt="">')
         elif href:
-            parts.append('<span class="x">Adjunto: <a href="{}">{}</a></span>'.format(
-                html.escape(href), html.escape(os.path.basename(href))))
-        parts.append('<span class="x">Ruta en la base: {}{}{}</span>'.format(
-            html.escape(str(m.media_path)),
-            " ({} bytes)".format(m.media_size) if m.media_size else "",
-            "" if href else " [archivo no localizado]"))
+            parts.append(
+                f'<span class="x">Adjunto: <a href="{html.escape(href)}">{html.escape(os.path.basename(href))}</a></span>'
+            )
+        parts.append(
+            '<span class="x">Ruta en la base: {}{}{}</span>'.format(
+                html.escape(str(m.media_path)),
+                f" ({m.media_size} bytes)" if m.media_size else "",
+                "" if href else " [archivo no localizado]",
+            )
+        )
     if m.latitude is not None and m.longitude is not None:
-        parts.append('<span class="x"><b>Coordenadas:</b> {}, {} &nbsp;'
-                     '<a href="https://www.openstreetmap.org/?mlat={}&amp;mlon={}'
-                     '#map=17/{}/{}">OpenStreetMap</a></span>'.format(
-                         m.latitude, m.longitude, m.latitude, m.longitude,
-                         m.latitude, m.longitude))
+        parts.append(
+            f'<span class="x"><b>Coordenadas:</b> {m.latitude}, {m.longitude} &nbsp;'
+            f'<a href="https://www.openstreetmap.org/?mlat={m.latitude}&amp;mlon={m.longitude}'
+            f'#map=17/{m.latitude}/{m.longitude}">OpenStreetMap</a></span>'
+        )
     if m.reactions:
-        parts.append('<span class="x">Reacciones: {}</span>'.format(
-            html.escape(" ".join(r.emoji for r in m.reactions))))
+        parts.append(
+            '<span class="x">Reacciones: {}</span>'.format(
+                html.escape(" ".join(r.emoji for r in m.reactions))
+            )
+        )
     if m.call_duration is not None:
-        parts.append('<span class="x">Duración: {} s{}{}</span>'.format(
-            m.call_duration, " · vídeo" if m.call_video else "",
-            " · " + m.call_result if m.call_result else ""))
+        parts.append(
+            '<span class="x">Duración: {} s{}{}</span>'.format(
+                m.call_duration,
+                " · vídeo" if m.call_video else "",
+                " · " + m.call_result if m.call_result else "",
+            )
+        )
     if m.status_desc:
         extra = ""
         if m.delivered_to or m.read_by:
-            extra = " (entregado a {}, leido por {})".format(m.delivered_to, m.read_by)
-        parts.append('<span class="x"><b>Estado:</b> {}{}</span>'.format(
-            html.escape(m.status_desc), extra))
+            extra = f" (entregado a {m.delivered_to}, leido por {m.read_by})"
+        parts.append(
+            f'<span class="x"><b>Estado:</b> {html.escape(m.status_desc)}{extra}</span>'
+        )
     marks = []
     if m.starred:
         marks.append("destacado")
@@ -1584,29 +1800,43 @@ def _content_cell(m, show_ids, href=None):
         parts.append('<span class="x">[{}]</span>'.format(", ".join(marks)))
     if show_ids and m.key_id:
         dev = infer_device(m.key_id)
-        parts.append('<span class="k">ID: {}{}</span>'.format(
-            html.escape(str(m.key_id)), " · " + dev if dev else ""))
+        parts.append(
+            '<span class="k">ID: {}{}</span>'.format(
+                html.escape(str(m.key_id)), " · " + dev if dev else ""
+            )
+        )
     return "".join(parts)
 
 
 def _criteria_block(flt):
     """Bloque de criterios aplicados. Sin esto el documento no es reproducible."""
     if flt is None or flt.is_empty():
-        return ("<h3>Criterios de selección</h3>"
-                "<table class='sum'><tr><th>Alcance</th>"
-                "<td>Todos los mensajes de la extracción, sin filtrar</td></tr>"
-                "</table>")
-    filas = "".join("<tr><th>{}</th><td>{}</td></tr>".format(
-        html.escape(str(k)), html.escape(str(v))) for k, v in flt.describe())
-    return ("<h3>Criterios de selección</h3><table class='sum'>{}</table>"
-            "<div class='note'>Este documento contiene <b>únicamente</b> los "
-            "mensajes que cumplen los criterios anteriores. Aplicando esos mismos "
-            "criterios sobre el origen verificado más abajo se obtiene el mismo "
-            "conjunto de mensajes.</div>").format(filas)
+        return (
+            "<h3>Criterios de selección</h3>"
+            "<table class='sum'><tr><th>Alcance</th>"
+            "<td>Todos los mensajes de la extracción, sin filtrar</td></tr>"
+            "</table>"
+        )
+    filas = "".join(
+        f"<tr><th>{html.escape(str(k))}</th><td>{html.escape(str(v))}</td></tr>"
+        for k, v in flt.describe()
+    )
+    return (
+        f"<h3>Criterios de selección</h3><table class='sum'>{filas}</table>"
+        "<div class='note'>Este documento contiene <b>únicamente</b> los "
+        "mensajes que cumplen los criterios anteriores. Aplicando esos mismos "
+        "criterios sobre el origen verificado más abajo se obtiene el mismo "
+        "conjunto de mensajes.</div>"
+    )
 
 
 def _cover(extraction, stats, title, case_ref, examiner, flt=None, shown=None):
-    rows = [("Plataforma", codes.PLATFORM_LABEL.get(extraction.platform, extraction.platform))]
+    rows = [
+        (
+            "Plataforma",
+            codes.PLATFORM_LABEL.get(extraction.platform, extraction.platform),
+        )
+    ]
     if case_ref:
         rows.insert(0, ("Referencia", case_ref))
     if examiner:
@@ -1623,51 +1853,78 @@ def _cover(extraction, stats, title, case_ref, examiner, flt=None, shown=None):
         rows.append(("Primer mensaje", fmt_ts(stats["first_ts"]) + " UTC"))
     if stats["last_ts"]:
         rows.append(("Último mensaje", fmt_ts(stats["last_ts"]) + " UTC"))
-    rows.append(("Fecha de emisión",
-                 datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S") + " UTC"))
+    rows.append(
+        (
+            "Fecha de emisión",
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            + " UTC",
+        )
+    )
 
-    t = "".join("<tr><th>{}</th><td>{}</td></tr>".format(
-        html.escape(str(k)), html.escape(str(v))) for k, v in rows)
+    t = "".join(
+        f"<tr><th>{html.escape(str(k))}</th><td>{html.escape(str(v))}</td></tr>"
+        for k, v in rows
+    )
 
     custody = ""
     if extraction.source_files:
-        custody = ("<h3>Verificación de los orígenes</h3><table class='sum'>"
-                   "<tr><th>Archivo</th><th>Tamaño</th><th>SHA-256</th></tr>")
+        custody = (
+            "<h3>Verificación de los orígenes</h3><table class='sum'>"
+            "<tr><th>Archivo</th><th>Tamaño</th><th>SHA-256</th></tr>"
+        )
         for s in extraction.source_files:
-            custody += ("<tr><td>{}</td><td>{:,} B</td>"
-                        "<td class='k'>{}</td></tr>").format(
-                html.escape(s["name"]), s["size"], s["sha256"])
+            custody += (
+                "<tr><td>{}</td><td>{:,} B</td><td class='k'>{}</td></tr>"
+            ).format(html.escape(s["name"]), s["size"], s["sha256"])
         custody += "</table>"
 
-    pills = "".join('<span class="pill">{}: {}</span>'.format(
-        html.escape(codes.KIND_LABEL.get(codes.Kind(k), k)), v)
-        for k, v in stats["by_kind"].items())
+    pills = "".join(
+        f'<span class="pill">{html.escape(codes.KIND_LABEL.get(codes.Kind(k), k))}: {v}</span>'
+        for k, v in stats["by_kind"].items()
+    )
 
     sel = ""
     if shown is not None:
         pct = (100.0 * shown / stats["total"]) if stats["total"] else 0
-        sel = ("<h3>Alcance del documento</h3><table class='sum'>"
-               "<tr><th>Mensajes en la extracción</th><td>{tot}</td></tr>"
-               "<tr><th>Mensajes en este documento</th><td>{sh} ({pct:.1f} %)</td></tr>"
-               "</table>").format(
+        sel = (
+            "<h3>Alcance del documento</h3><table class='sum'>"
+            "<tr><th>Mensajes en la extracción</th><td>{tot}</td></tr>"
+            "<tr><th>Mensajes en este documento</th><td>{sh} ({pct:.1f} %)</td></tr>"
+            "</table>"
+        ).format(
             tot="{:,}".format(stats["total"]).replace(",", "."),
-            sh="{:,}".format(shown).replace(",", "."), pct=pct)
+            sh=f"{shown:,}".replace(",", "."),
+            pct=pct,
+        )
 
-    return ("<div class='cover'><h1>{}</h1>"
-            "<div class='meta'>Documento generado para impresión</div>"
-            "<h3>Datos del análisis</h3><table class='sum'>{}</table>"
-            "{}{}{}"
-            "<h3>Distribución por tipo de mensaje (extracción completa)</h3>{}"
-            "<div class='note'>Todas las fechas se expresan en UTC. La columna "
-            "«N.º» es una numeración correlativa de este documento, no el "
-            "identificador interno de la base de datos.</div></div>").format(
-        html.escape(title), t, _criteria_block(flt), sel, custody, pills)
+    return (
+        f"<div class='cover'><h1>{html.escape(title)}</h1>"
+        "<div class='meta'>Documento generado para impresión</div>"
+        f"<h3>Datos del análisis</h3><table class='sum'>{t}</table>"
+        f"{_criteria_block(flt)}{sel}{custody}"
+        f"<h3>Distribución por tipo de mensaje (extracción completa)</h3>{pills}"
+        "<div class='note'>Todas las fechas se expresan en UTC. La columna "
+        "«N.º» es una numeración correlativa de este documento, no el "
+        "identificador interno de la base de datos.</div></div>"
+    )
 
 
-def build_printable(extraction, out_path, title="Informe forense WhatsApp",
-                    case_ref=None, examiner=None, flt=None, show_ids=True,
-                    max_messages=None, chat_filter=None, date_from=None,
-                    date_to=None, kinds=None, media_root=None, copy_media=False):
+def build_printable(
+    extraction,
+    out_path,
+    title="Informe forense WhatsApp",
+    case_ref=None,
+    examiner=None,
+    flt=None,
+    show_ids=True,
+    max_messages=None,
+    chat_filter=None,
+    date_from=None,
+    date_to=None,
+    kinds=None,
+    media_root=None,
+    copy_media=False,
+):
     """Genera un HTML estático listo para imprimir o convertir a PDF.
 
     flt : whapa2.query.Filter con los criterios. Los parámetros sueltos
@@ -1675,8 +1932,12 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
           compatibilidad y se fusionan en el filtro si no se pasa `flt`.
     """
     if flt is None:
-        flt = Filter(chat=chat_filter, date_from=date_from, date_to=date_to,
-                     kinds=set(kinds) if kinds else None)
+        flt = Filter(
+            chat=chat_filter,
+            date_from=date_from,
+            date_to=date_to,
+            kinds=set(kinds) if kinds else None,
+        )
 
     base_dir = os.path.dirname(os.path.abspath(out_path)) or "."
     resolver = MediaResolver(media_root, "media" if copy_media else None)
@@ -1685,8 +1946,11 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
     chats = extraction.chats()
     if flt.chat:
         f = flt.chat.lower()
-        chats = [c for c in chats
-                 if f in (c.label or "").lower() or f in (c.chat_id or "").lower()]
+        chats = [
+            c
+            for c in chats
+            if f in (c.label or "").lower() or f in (c.chat_id or "").lower()
+        ]
 
     # It is selected first, to be able to announce the scope on the cover
     seleccion = []
@@ -1706,18 +1970,27 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
         if truncated:
             break
         ts = [m.timestamp for m in msgs if m.timestamp]
-        body.append("<h2>{}{}</h2>".format(
-            html.escape(c.label), " · grupo" if c.is_group else ""))
-        body.append("<div class='meta'>{} · {} mensajes seleccionados · "
-                    "rango {} a {} UTC</div>".format(
-                        html.escape(c.chat_id or ""), len(msgs),
-                        fmt_ts(min(ts)) if ts else "—",
-                        fmt_ts(max(ts)) if ts else "—"))
-        body.append("<table class='msgs'><thead><tr><th class='n'>N.º</th>"
-                    "<th class='f'>Fecha (UTC)</th>"
-                    "<th class='d'>Dir.</th><th class='r'>Remitente</th>"
-                    "<th class='t'>Tipo (código)</th><th class='c'>Contenido</th>"
-                    "</tr></thead><tbody>")
+        body.append(
+            "<h2>{}{}</h2>".format(
+                html.escape(c.label), " · grupo" if c.is_group else ""
+            )
+        )
+        body.append(
+            "<div class='meta'>{} · {} mensajes seleccionados · "
+            "rango {} a {} UTC</div>".format(
+                html.escape(c.chat_id or ""),
+                len(msgs),
+                fmt_ts(min(ts)) if ts else "—",
+                fmt_ts(max(ts)) if ts else "—",
+            )
+        )
+        body.append(
+            "<table class='msgs'><thead><tr><th class='n'>N.º</th>"
+            "<th class='f'>Fecha (UTC)</th>"
+            "<th class='d'>Dir.</th><th class='r'>Remitente</th>"
+            "<th class='t'>Tipo (código)</th><th class='c'>Contenido</th>"
+            "</tr></thead><tbody>"
+        )
         for m in msgs:
             if max_messages and n >= max_messages:
                 truncated = True
@@ -1727,32 +2000,52 @@ def build_printable(extraction, out_path, title="Informe forense WhatsApp",
                 "<tr class='{cls}'><td class='n'>{n}</td><td class='f'>{f}</td>"
                 "<td class='d'>{d}</td><td class='r'>{r}</td>"
                 "<td class='t'>{t} ({rt})</td><td class='c'>{c}</td></tr>".format(
-                    cls=_row_class(m), n=n, f=fmt_ts(m.timestamp),
-                    d=_dirn(m)[:3], r=html.escape(_remitente(m)),
+                    cls=_row_class(m),
+                    n=n,
+                    f=fmt_ts(m.timestamp),
+                    d=_dirn(m)[:3],
+                    r=html.escape(_remitente(m)),
                     t=html.escape(m.type_desc),
                     rt=m.raw_type if m.raw_type is not None else "?",
-                    c=_content_cell(m, show_ids,
-                                     resolver.resolve(m.media_path, base_dir)
-                                     if (media_root and m.media_path) else None)))
+                    c=_content_cell(
+                        m,
+                        show_ids,
+                        resolver.resolve(m.media_path, base_dir)
+                        if (media_root and m.media_path)
+                        else None,
+                    ),
+                )
+            )
         body.append("</tbody></table>")
         if truncated:
-            body.append("<div class='note'><b>Documento truncado</b> al alcanzar "
-                        "el límite de {} mensajes. Afina los criterios o eleva "
-                        "--max-messages.</div>".format(max_messages))
+            body.append(
+                "<div class='note'><b>Documento truncado</b> al alcanzar "
+                f"el límite de {max_messages} mensajes. Afina los criterios o eleva "
+                "--max-messages.</div>"
+            )
 
     if not seleccion:
-        body.append("<div class='note'><b>Ningún mensaje cumple los criterios "
-                    "indicados.</b></div>")
+        body.append(
+            "<div class='note'><b>Ningún mensaje cumple los criterios "
+            "indicados.</b></div>"
+        )
 
-    doc = ("<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>"
-           "<title>{t}</title><style>{css}</style></head><body>{b}</body></html>").format(
-        t=html.escape(title), css=PRINT_CSS, b="".join(body))
+    doc = (
+        "<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'>"
+        "<title>{t}</title><style>{css}</style></head><body>{b}</body></html>"
+    ).format(t=html.escape(title), css=PRINT_CSS, b="".join(body))
 
     with open(out_path, "w", encoding="utf-8") as fh:
         fh.write(doc)
-    return {"path": out_path, "messages": n, "chats": len(seleccion),
-            "selected": total_sel, "truncated": truncated,
-            "media_found": resolver.found, "media_missing": resolver.missing}
+    return {
+        "path": out_path,
+        "messages": n,
+        "chats": len(seleccion),
+        "selected": total_sel,
+        "truncated": truncated,
+        "media_found": resolver.found,
+        "media_missing": resolver.missing,
+    }
 
 
 # ===========================================================================
@@ -1845,10 +2138,11 @@ class MediaResolver:
                 n = 1
                 base, ext = os.path.splitext(nombre)
                 while os.path.exists(destino) and self._copied.get(destino) != real:
-                    destino = os.path.join(destino_dir, "{}_{}{}".format(base, n, ext))
+                    destino = os.path.join(destino_dir, f"{base}_{n}{ext}")
                     n += 1
                 try:
                     import shutil
+
                     shutil.copy2(real, destino)
                     self._copied[real] = destino
                 except OSError:
@@ -1857,11 +2151,11 @@ class MediaResolver:
                     return None
             else:
                 destino = self._copied[real]
-            return "{}/{}".format(self.copy_to, os.path.basename(destino))
+            return f"{self.copy_to}/{os.path.basename(destino)}"
         # relative link from report to original file
         try:
             return os.path.relpath(real, out_dir).replace("\\", "/")
-        except ValueError:   # different drives in Windows
+        except ValueError:  # different drives in Windows
             return "file:///" + real.replace("\\", "/")
 
 
@@ -1875,9 +2169,11 @@ class MediaResolver:
 #  With the -gm option it is downloaded once, when generating the report, and saved
 #  inside the folder. From there the report is autonomous.
 
-STATIC_MAP_URL = ("https://staticmap.openstreetmap.de/staticmap.php"
-                  "?center={lat},{lon}&zoom={zoom}&size={size}"
-                  "&markers={lat},{lon},red-pushpin")
+STATIC_MAP_URL = (
+    "https://staticmap.openstreetmap.de/staticmap.php"
+    "?center={lat},{lon}&zoom={zoom}&size={size}"
+    "&markers={lat},{lon},red-pushpin"
+)
 
 
 class MapDownloader:
@@ -1896,22 +2192,25 @@ class MapDownloader:
         """Devuelve la ruta relativa del mapa, o None si no se pudo obtener."""
         if not self.enabled or lat is None or lon is None:
             return None
-        clave = "{:.5f},{:.5f}".format(float(lat), float(lon))
+        clave = f"{float(lat):.5f},{float(lon):.5f}"
         if clave in self.cache:
             return self.cache[clave]
-        nombre = "map_{}.png".format(clave.replace(",", "_").replace("-", "m")
-                                     .replace(".", "p"))
+        nombre = "map_{}.png".format(
+            clave.replace(",", "_").replace("-", "m").replace(".", "p")
+        )
         destino_dir = os.path.join(out_dir, self.subdir)
         destino = os.path.join(destino_dir, nombre)
-        rel = "{}/{}".format(self.subdir, nombre)
+        rel = f"{self.subdir}/{nombre}"
         if os.path.isfile(destino):
             self.cache[clave] = rel
             return rel
         try:
             import urllib.request
+
             os.makedirs(destino_dir, exist_ok=True)
-            url = STATIC_MAP_URL.format(lat=lat, lon=lon, zoom=self.zoom,
-                                        size=self.size)
+            url = STATIC_MAP_URL.format(
+                lat=lat, lon=lon, zoom=self.zoom, size=self.size
+            )
             req = urllib.request.Request(url, headers={"User-Agent": "whapa/2.00"})
             with urllib.request.urlopen(req, timeout=15) as r:
                 datos = r.read()
@@ -1945,26 +2244,41 @@ def export_kml(hits_or_messages, path, titulo="Ubicaciones WhatsApp"):
     def esc(t):
         return html.escape(str(t or ""))
 
-    partes = ['<?xml version="1.0" encoding="UTF-8"?>',
-              '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>',
-              '<name>{}</name>'.format(esc(titulo))]
+    partes = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>',
+        f"<name>{esc(titulo)}</name>",
+    ]
     for chat, m in puntos:
         cuando = fmt_ts(m.timestamp)
-        desc = ("Chat: {}<br/>Fecha (UTC): {}<br/>Direccion: {}<br/>"
-                "Tipo: {} ({})<br/>Remitente: {}<br/>Texto: {}<br/>"
-                "ID: {}").format(
-            esc(chat), esc(cuando),
+        desc = (
+            "Chat: {}<br/>Fecha (UTC): {}<br/>Direccion: {}<br/>"
+            "Tipo: {} ({})<br/>Remitente: {}<br/>Texto: {}<br/>"
+            "ID: {}"
+        ).format(
+            esc(chat),
+            esc(cuando),
             "enviado" if m.from_me else "recibido",
-            esc(m.type_desc), m.raw_type if m.raw_type is not None else "?",
-            esc(m.sender or ""), esc(m.text or m.media_caption or ""),
-            esc(m.key_id or ""))
+            esc(m.type_desc),
+            m.raw_type if m.raw_type is not None else "?",
+            esc(m.sender or ""),
+            esc(m.text or m.media_caption or ""),
+            esc(m.key_id or ""),
+        )
         partes.append(
             "<Placemark><name>{n}</name><description><![CDATA[{d}]]></description>"
             "{t}<Point><coordinates>{lon},{lat},0</coordinates></Point></Placemark>".format(
-                n=esc("{} - {}".format(cuando, chat)), d=desc,
+                n=esc(f"{cuando} - {chat}"),
+                d=desc,
                 t="<TimeStamp><when>{}Z</when></TimeStamp>".format(
-                    cuando.replace(" ", "T")) if cuando else "",
-                lon=m.longitude, lat=m.latitude))
+                    cuando.replace(" ", "T")
+                )
+                if cuando
+                else "",
+                lon=m.longitude,
+                lat=m.latitude,
+            )
+        )
     partes.append("</Document></kml>")
 
     with open(path, "w", encoding="utf-8") as fh:

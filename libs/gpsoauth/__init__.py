@@ -1,10 +1,9 @@
 """A python client library for Google Play Services OAuth."""
 
-from collections.abc import MutableMapping
+import ssl
+from collections.abc import Iterable, MutableMapping
 from dataclasses import dataclass
 from importlib.metadata import version
-import ssl
-from typing import Iterable
 
 import requests
 from urllib3.poolmanager import PoolManager  # type: ignore

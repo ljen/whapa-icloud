@@ -1,9 +1,10 @@
 import unittest
+
 from libs.whachat import (
+    getDataPointAndroid,
+    getDataPointiOS,
     startsWithDateTimeAndroid,
     startsWithDateTimeiOS,
-    getDataPointiOS,
-    getDataPointAndroid,
 )
 
 

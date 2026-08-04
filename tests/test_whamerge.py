@@ -1,19 +1,19 @@
-import unittest
 import os
-import sys
-import sqlite3
-import tempfile
 import shutil
+import sqlite3
+import sys
+import tempfile
+import unittest
 from unittest.mock import patch
 
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from libs.whamerge import (
+    chatlist_columns,
     merge,
     merge_win,
     messages_columns,
-    chatlist_columns,
     quote_columns,
     thumbnail_columns,
 )

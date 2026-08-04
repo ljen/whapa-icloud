@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """
 whacodes.py — Catálogo de códigos de WhatsApp (Android + iOS)
 
@@ -25,6 +24,7 @@ from enum import Enum
 
 class Kind(str, Enum):
     """Vocabulario canónico común a Android e iOS."""
+
     TEXT = "text"
     IMAGE = "image"
     AUDIO = "audio"
@@ -59,18 +59,35 @@ class Kind(str, Enum):
 
 # Readable canonical vocabulary labels (for report statistics)
 KIND_LABEL = {
-    Kind.TEXT: "Texto", Kind.IMAGE: "Imagen", Kind.AUDIO: "Audio/nota de voz",
-    Kind.VIDEO: "Vídeo", Kind.CONTACT: "Contacto", Kind.LOCATION: "Ubicación",
-    Kind.LIVE_LOCATION: "Ubicación en tiempo real", Kind.SYSTEM: "Sistema",
-    Kind.URL: "Enlace", Kind.DOCUMENT: "Documento", Kind.GIF: "GIF",
-    Kind.STICKER: "Sticker/avatar", Kind.DELETED: "Borrado", Kind.CALL: "Llamada",
-    Kind.CALL_MISSED: "Llamada perdida", Kind.EPHEMERAL_CHANGE: "Mensajes temporales",
-    Kind.VIEW_ONCE_IMAGE: "Imagen de una vez", Kind.VIEW_ONCE_VIDEO: "Vídeo de una vez",
-    Kind.VIEW_ONCE_VOICE: "Nota de voz de una vez", Kind.POLL: "Encuesta",
-    Kind.VIDEO_NOTE: "Nota de vídeo", Kind.EVENT: "Evento", Kind.ALBUM: "Álbum",
-    Kind.CHANNEL_ADMIN_INV: "Invitación admin. canal", Kind.CHANNEL_CREATE: "Creación de canal",
-    Kind.STATUS_MENTION: "Mención en estado", Kind.AI_FEEDBACK: "Feedback Meta AI",
-    Kind.WA_NEWS: "Novedades WhatsApp", Kind.ADVANCED_PRIVACY: "Privacidad avanzada",
+    Kind.TEXT: "Texto",
+    Kind.IMAGE: "Imagen",
+    Kind.AUDIO: "Audio/nota de voz",
+    Kind.VIDEO: "Vídeo",
+    Kind.CONTACT: "Contacto",
+    Kind.LOCATION: "Ubicación",
+    Kind.LIVE_LOCATION: "Ubicación en tiempo real",
+    Kind.SYSTEM: "Sistema",
+    Kind.URL: "Enlace",
+    Kind.DOCUMENT: "Documento",
+    Kind.GIF: "GIF",
+    Kind.STICKER: "Sticker/avatar",
+    Kind.DELETED: "Borrado",
+    Kind.CALL: "Llamada",
+    Kind.CALL_MISSED: "Llamada perdida",
+    Kind.EPHEMERAL_CHANGE: "Mensajes temporales",
+    Kind.VIEW_ONCE_IMAGE: "Imagen de una vez",
+    Kind.VIEW_ONCE_VIDEO: "Vídeo de una vez",
+    Kind.VIEW_ONCE_VOICE: "Nota de voz de una vez",
+    Kind.POLL: "Encuesta",
+    Kind.VIDEO_NOTE: "Nota de vídeo",
+    Kind.EVENT: "Evento",
+    Kind.ALBUM: "Álbum",
+    Kind.CHANNEL_ADMIN_INV: "Invitación admin. canal",
+    Kind.CHANNEL_CREATE: "Creación de canal",
+    Kind.STATUS_MENTION: "Mención en estado",
+    Kind.AI_FEEDBACK: "Feedback Meta AI",
+    Kind.WA_NEWS: "Novedades WhatsApp",
+    Kind.ADVANCED_PRIVACY: "Privacidad avanzada",
     Kind.UNKNOWN: "Sin catalogar",
 }
 
@@ -92,7 +109,10 @@ ANDROID_MESSAGE_TYPE = {
     16: (Kind.LIVE_LOCATION, "Ubicación en tiempo real"),
     20: (Kind.STICKER, "Sticker o avatar"),
     28: (Kind.WA_NEWS, "Cuenta oficial de WhatsApp (novedades)"),
-    36: (Kind.EPHEMERAL_CHANGE, "Mensajes temporales activados/desactivados (chat individual)"),
+    36: (
+        Kind.EPHEMERAL_CHANGE,
+        "Mensajes temporales activados/desactivados (chat individual)",
+    ),
     42: (Kind.VIEW_ONCE_IMAGE, "Imagen de visualización única"),
     43: (Kind.VIEW_ONCE_VIDEO, "Vídeo de visualización única"),
     64: (Kind.DELETED, "Mensaje de grupo borrado para todos por un administrador"),
@@ -110,12 +130,17 @@ ANDROID_MESSAGE_TYPE = {
 
 # Android legacy — table `messages`, field `media_wa_type`
 ANDROID_MEDIA_WA_TYPE = {
-    0: (Kind.TEXT, "Mensaje de texto"), 1: (Kind.IMAGE, "Imagen"),
-    2: (Kind.AUDIO, "Audio o nota de voz"), 3: (Kind.VIDEO, "Vídeo"),
-    4: (Kind.CONTACT, "Tarjeta de contacto"), 5: (Kind.LOCATION, "Ubicación"),
-    8: (Kind.CALL, "Llamada de audio/vídeo"), 9: (Kind.DOCUMENT, "Documento"),
+    0: (Kind.TEXT, "Mensaje de texto"),
+    1: (Kind.IMAGE, "Imagen"),
+    2: (Kind.AUDIO, "Audio o nota de voz"),
+    3: (Kind.VIDEO, "Vídeo"),
+    4: (Kind.CONTACT, "Tarjeta de contacto"),
+    5: (Kind.LOCATION, "Ubicación"),
+    8: (Kind.CALL, "Llamada de audio/vídeo"),
+    9: (Kind.DOCUMENT, "Documento"),
     10: (Kind.CALL_MISSED, "Llamada/videollamada perdida"),
-    11: (Kind.SYSTEM, "En espera de mensaje"), 13: (Kind.GIF, "GIF"),
+    11: (Kind.SYSTEM, "En espera de mensaje"),
+    13: (Kind.GIF, "GIF"),
     14: (Kind.CONTACT, "Tarjeta de contacto (múltiple)"),
     15: (Kind.DELETED, "Mensaje borrado"),
     16: (Kind.LIVE_LOCATION, "Ubicación en tiempo real"),
@@ -126,13 +151,17 @@ ANDROID_MEDIA_WA_TYPE = {
 # iOS — table `ZWAMESSAGE`, field `ZMESSAGETYPE` (report 5.3.8)
 # ---------------------------------------------------------------------------
 IOS_ZMESSAGETYPE = {
-    0: (Kind.TEXT, "Mensaje de texto"), 1: (Kind.IMAGE, "Imagen"),
-    2: (Kind.VIDEO, "Vídeo"), 3: (Kind.AUDIO, "Nota de voz o archivo de audio"),
+    0: (Kind.TEXT, "Mensaje de texto"),
+    1: (Kind.IMAGE, "Imagen"),
+    2: (Kind.VIDEO, "Vídeo"),
+    3: (Kind.AUDIO, "Nota de voz o archivo de audio"),
     4: (Kind.CONTACT, "Tarjeta de contacto"),
     5: (Kind.LOCATION, "Ubicación en tiempo real o actual"),
-    6: (Kind.SYSTEM, "Mensaje del sistema"), 7: (Kind.URL, "Enlace a una URL"),
+    6: (Kind.SYSTEM, "Mensaje del sistema"),
+    7: (Kind.URL, "Enlace a una URL"),
     8: (Kind.DOCUMENT, "Documento (pdf, docx, xlsx…)"),
-    10: (Kind.SYSTEM, "Mensaje del sistema"), 11: (Kind.GIF, "GIF"),
+    10: (Kind.SYSTEM, "Mensaje del sistema"),
+    11: (Kind.GIF, "GIF"),
     14: (Kind.DELETED, "Mensaje eliminado para todos"),
     15: (Kind.STICKER, "Sticker o avatar"),
     28: (Kind.EPHEMERAL_CHANGE, "Cambio de temporalidad (chat individual)"),
@@ -145,7 +174,8 @@ IOS_ZMESSAGETYPE = {
     58: (Kind.AI_FEEDBACK, "Feedback del usuario sobre el bot de Meta AI"),
     59: (Kind.CALL, "Llamada, videollamada o chat de audio"),
     62: (Kind.CHANNEL_CREATE, "Mensaje del sistema al crear un canal"),
-    63: (Kind.EVENT, "Evento"), 66: (Kind.ALBUM, "Álbum multimedia"),
+    63: (Kind.EVENT, "Evento"),
+    66: (Kind.ALBUM, "Álbum multimedia"),
     68: (Kind.STATUS_MENTION, "Mención de un contacto en el Estado (o viceversa)"),
     73: (Kind.ADVANCED_PRIVACY, "Privacidad avanzada del chat individual"),
 }
@@ -254,7 +284,7 @@ def status_description(status, from_me):
     if status == STATUS_SYSTEM:
         return "Mensaje del sistema"
     tabla = STATUS_SENT if from_me else STATUS_RECEIVED
-    return tabla.get(status, "Estado sin catalogar (codigo {})".format(status))
+    return tabla.get(status, f"Estado sin catalogar (codigo {status})")
 
 
 # States that prove that the recipient opened the message
@@ -304,10 +334,10 @@ def normalize(platform, raw_type):
     try:
         raw_type = int(raw_type)
     except (TypeError, ValueError):
-        return Kind.UNKNOWN, "Tipo desconocido ({!r})".format(raw_type)
+        return Kind.UNKNOWN, f"Tipo desconocido ({raw_type!r})"
     if raw_type in table:
         return table[raw_type]
-    return Kind.UNKNOWN, "Tipo sin catalogar (código {})".format(raw_type)
+    return Kind.UNKNOWN, f"Tipo sin catalogar (código {raw_type})"
 
 
 def describe(platform, raw_type):
@@ -327,20 +357,20 @@ def is_deleted(platform, raw_type):
 
 def add_on_description(t):
     try:
-        return ADD_ON_TYPE.get(int(t), "Característica sin catalogar ({})".format(t))
+        return ADD_ON_TYPE.get(int(t), f"Característica sin catalogar ({t})")
     except (TypeError, ValueError):
-        return "Característica desconocida ({!r})".format(t)
+        return f"Característica desconocida ({t!r})"
 
 
 def system_action_description(t):
     try:
-        return SYSTEM_ACTION_TYPE.get(int(t), "Acción de sistema sin catalogar ({})".format(t))
+        return SYSTEM_ACTION_TYPE.get(int(t), f"Acción de sistema sin catalogar ({t})")
     except (TypeError, ValueError):
-        return "Acción de sistema desconocida ({!r})".format(t)
+        return f"Acción de sistema desconocida ({t!r})"
 
 
 def call_result_description(t):
     try:
-        return CALL_RESULT.get(int(t), "Resultado sin catalogar ({})".format(t))
+        return CALL_RESULT.get(int(t), f"Resultado sin catalogar ({t})")
     except (TypeError, ValueError):
         return ""

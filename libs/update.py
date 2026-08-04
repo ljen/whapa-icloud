@@ -1,7 +1,8 @@
-import requests
 import re
-import webbrowser
 import sys
+import webbrowser
+
+import requests
 
 
 def start(version):
@@ -15,7 +16,7 @@ def start(version):
             break
 
     if float(update) > float(version):
-        print("New version available: {}".format(update))
+        print(f"New version available: {update}")
         webbrowser.open_new_tab("https://github.com/B16f00t/whapa")
     else:
         print("You have the latest version")

@@ -1,8 +1,9 @@
-import unittest
-import tempfile
-import os
 import binascii
-from libs.whacloud import is_media_tar, hkdf_legacy
+import os
+import tempfile
+import unittest
+
+from libs.whacloud import hkdf_legacy, is_media_tar
 
 
 class TestHkdfLegacy(unittest.TestCase):

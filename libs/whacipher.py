@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """
 whacipher.py - Descifrado y cifrado de bases de datos de WhatsApp
 
@@ -26,13 +25,13 @@ QUE CAMBIA RESPECTO A LA VERSION ANTERIOR
 ** Github: https://github.com/B16f00t
 """
 
+import argparse
+import hmac
+import math
 import os
 import sys
-import hmac
 import zlib
-import math
-import argparse
-from hashlib import sha256, md5
+from hashlib import md5, sha256
 
 try:
     from Crypto.Cipher import AES
@@ -44,26 +43,27 @@ except ImportError:
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import whadeps
+
 whadeps.safe_console()
 
 version = "2.00"
 
 
 def banner():
-    """ Function Banner """
-    print(r"""
+    """Function Banner"""
+    print(rf"""
      __      __.__            _________ .__       .__
     /  \    /  \  |__ _____   \_   ___ \|__|_____ |  |__   ___________
     \   \/\/   /  |  \\__  \  /    \  \/|  \____ \|  |  \_/ __ \_  __ \
      \        /|   Y  \/ __ \_\     \___|  |  |_> >   Y  \  ___/|  | \/
       \__/\  / |___|  (____  / \______  /__|   __/|___|  /\___  >__|
            \/       \/     \/         \/   |__|        \/     \/
-    ------------- Whatsapp Cipher v{} -------------
-    """.format(version))
+    ------------- Whatsapp Cipher v{version} -------------
+    """)
 
 
 def help():
-    """ Function show help """
+    """Function show help"""
     print("""    ** Author: Ivan Moreno a.k.a B16f00t
     ** Github: https://github.com/B16f00t
 
@@ -97,22 +97,24 @@ def _iter_fields(buf):
         tag, pos = _read_varint(buf, pos)
         field_no = tag >> 3
         wire = tag & 0x07
-        if wire == 0:            # varint
+        if wire == 0:  # varint
             val, pos = _read_varint(buf, pos)
             yield field_no, wire, val
-        elif wire == 2:          # length-delimited (bytes/submessage)
+        elif wire == 2:  # length-delimited (bytes/submessage)
             length, pos = _read_varint(buf, pos)
-            val = buf[pos:pos + length]
+            val = buf[pos : pos + length]
             pos += length
             yield field_no, wire, val
-        elif wire == 5:          # 32-bit
-            val = buf[pos:pos + 4]; pos += 4
+        elif wire == 5:  # 32-bit
+            val = buf[pos : pos + 4]
+            pos += 4
             yield field_no, wire, val
-        elif wire == 1:          # 64-bit
-            val = buf[pos:pos + 8]; pos += 8
+        elif wire == 1:  # 64-bit
+            val = buf[pos : pos + 8]
+            pos += 8
             yield field_no, wire, val
         else:
-            raise ValueError("Wire type protobuf no soportado: {}".format(wire))
+            raise ValueError(f"Wire type protobuf no soportado: {wire}")
 
 
 def parse_header(db_data):
@@ -129,21 +131,21 @@ def parse_header(db_data):
     # Optional byte 0x01 = presence of features table (msgstore only)
     if len(db_data) > 1 and db_data[1] == 0x01:
         pos = 2
-    protobuf_raw = db_data[pos:pos + protobuf_size]
+    protobuf_raw = db_data[pos : pos + protobuf_size]
     header_len = pos + protobuf_size
 
     version = None
     iv = None
     for field_no, wire, val in _iter_fields(protobuf_raw):
-        if field_no == 2 and wire == 2:      # c14_cipher (crypt14)
+        if field_no == 2 and wire == 2:  # c14_cipher (crypt14)
             version = "crypt14"
             for sub_no, sub_wire, sub_val in _iter_fields(val):
-                if sub_no == 5 and sub_wire == 2:   # C14_cipher.IV
+                if sub_no == 5 and sub_wire == 2:  # C14_cipher.IV
                     iv = sub_val
-        elif field_no == 3 and wire == 2:    # c15_iv (crypt15)
+        elif field_no == 3 and wire == 2:  # c15_iv (crypt15)
             version = "crypt15"
             for sub_no, sub_wire, sub_val in _iter_fields(val):
-                if sub_no == 1 and sub_wire == 2:   # C15_IV.IV
+                if sub_no == 1 and sub_wire == 2:  # C15_IV.IV
                     iv = sub_val
     if iv is None or len(iv) != 16:
         raise ValueError("No se pudo extraer un IV de 16 bytes de la cabecera")
@@ -153,10 +155,13 @@ def parse_header(db_data):
 # ===========================================================================
 #  crypt15 key derivation (identical to wa-crypt-tools encryptionloop)
 # ===========================================================================
-def _encryption_loop(first_iteration_data, message, output_bytes=32,
-                     privateseed=b"\x00" * 32):
+def _encryption_loop(
+    first_iteration_data, message, output_bytes=32, privateseed=b"\x00" * 32
+):
     """Bucle HMAC-SHA256 anidado que usa WhatsApp para derivar subclaves."""
-    privatekey = hmac.new(privateseed, msg=first_iteration_data, digestmod=sha256).digest()
+    privatekey = hmac.new(
+        privateseed, msg=first_iteration_data, digestmod=sha256
+    ).digest()
     data = b""
     output = b""
     permutations = int(math.ceil(output_bytes / 32.0))
@@ -166,7 +171,7 @@ def _encryption_loop(first_iteration_data, message, output_bytes=32,
             hasher.update(message)
         hasher.update(i.to_bytes(1, byteorder="big"))
         data = hasher.digest()
-        output += data[:min(output_bytes, len(data))]
+        output += data[: min(output_bytes, len(data))]
     return output
 
 
@@ -193,7 +198,7 @@ def load_key(key_source):
             pass
 
     if not os.path.exists(key_source):
-        raise FileNotFoundError("No existe la clave: {}".format(key_source))
+        raise FileNotFoundError(f"No existe la clave: {key_source}")
 
     with open(key_source, "rb") as fh:
         key_data = fh.read()
@@ -207,7 +212,7 @@ def load_key(key_source):
     # encrypted_backup.key (serialized Java object): root is the final 32 B
     if len(key_data) > 32:
         return key_data[-32:], True
-    raise ValueError("Formato de clave no reconocido ({} bytes)".format(len(key_data)))
+    raise ValueError(f"Formato de clave no reconocido ({len(key_data)} bytes)")
 
 
 # ===========================================================================
@@ -215,7 +220,12 @@ def load_key(key_source):
 # ===========================================================================
 def _maybe_decompress(plaintext):
     """Descomprime zlib si procede; si no está comprimido, devuelve tal cual."""
-    if plaintext[:2] == b"\x78" and plaintext[2:3] in (b"\x01", b"\x5e", b"\x9c", b"\xda"):
+    if plaintext[:2] == b"\x78" and plaintext[2:3] in (
+        b"\x01",
+        b"\x5e",
+        b"\x9c",
+        b"\xda",
+    ):
         try:
             return zlib.decompress(plaintext)
         except zlib.error:
@@ -253,7 +263,7 @@ def decrypt(db_file, key_source, output):
     # --- crypt14 / crypt15: protobuf header ---
     header = parse_header(db_data)
     iv = header["iv"]
-    encrypted = db_data[header["header_len"]:]
+    encrypted = db_data[header["header_len"] :]
 
     if header["version"] == "crypt15":
         aes_key = derive_key(raw_key) if is_root else raw_key
@@ -263,7 +273,9 @@ def decrypt(db_file, key_source, output):
         aes = AES.new(aes_key, AES.MODE_GCM, nonce=iv)
     else:  # crypt14
         if is_root:
-            raise ValueError("Se ha proporcionado una clave raíz crypt15 para un backup crypt14")
+            raise ValueError(
+                "Se ha proporcionado una clave raíz crypt15 para un backup crypt14"
+            )
         aes = AES.new(raw_key, AES.MODE_GCM, nonce=iv)
 
     plain = _maybe_decompress(aes.decrypt(encrypted))
@@ -283,12 +295,11 @@ def decrypt_path(path, key_source, out_dir):
             out = os.path.join(out_dir, os.path.splitext(f)[0])
             try:
                 decrypt(os.path.join(path, f), key_source, out)
-                print("[-] {} -> {}".format(f, out))
+                print(f"[-] {f} -> {out}")
                 done += 1
             except Exception as e:
-                print("[e] {}: {}".format(f, e))
-    print("[i] {} bases descifradas".format(done))
-
+                print(f"[e] {f}: {e}")
+    print(f"[i] {done} bases descifradas")
 
 
 # ===========================================================================
@@ -308,13 +319,25 @@ def _write_varint(value):
 
 def build_crypt15_header(iv, app_version="2.24.0.0", jid_suffix="00"):
     """Cabecera protobuf crypt15 mínima válida (mensaje BackupPrefix)."""
-    c15 = b"\x0a" + _write_varint(len(iv)) + iv            # C15_IV.IV = field 1
+    c15 = b"\x0a" + _write_varint(len(iv)) + iv  # C15_IV.IV = field 1
     av, js = app_version.encode(), jid_suffix.encode()
-    info = (b"\x0a" + _write_varint(len(av)) + av +        # app_version = 1
-            b"\x1a" + _write_varint(len(js)) + js)         # jidSuffix = 3
-    prefix = (b"\x08\x01" +                               # key_type = 1 (E2E)
-              b"\x1a" + _write_varint(len(c15)) + c15 +    # c15_iv = 3
-              b"\x22" + _write_varint(len(info)) + info)   # info = 4
+    info = (
+        b"\x0a"
+        + _write_varint(len(av))
+        + av  # app_version = 1
+        + b"\x1a"
+        + _write_varint(len(js))
+        + js
+    )  # jidSuffix = 3
+    prefix = (
+        b"\x08\x01"  # key_type = 1 (E2E)
+        + b"\x1a"
+        + _write_varint(len(c15))
+        + c15  # c15_iv = 3
+        + b"\x22"
+        + _write_varint(len(info))
+        + info
+    )  # info = 4
     return bytes([len(prefix)]) + prefix
 
 
@@ -338,7 +361,6 @@ def encrypt(db_file, key_source, output, iv=None):
     return output
 
 
-
 # ===========================================================================
 #  order line
 # ===========================================================================
@@ -354,18 +376,26 @@ def main():
     python3 whacipher.py -p ./backups -d key -o ./salida
   Cifrar en crypt15:
     python3 whacipher.py -f msgstore.db -e key -o msgstore.db.crypt15""",
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("-f", "--file", help="Database file to encrypt or decrypt", nargs='?')
-    mode.add_argument("-p", "--path", help="Database path to decrypt", nargs='?')
-    parser.add_argument("-d", "--decrypt",
-                        help="Whatsapp Key path or 64 hex chars (Decrypt database)")
-    parser.add_argument("-e", "--encrypt",
-                        help="Whatsapp Key path or 64 hex chars (Encrypt database)")
+    mode.add_argument(
+        "-f", "--file", help="Database file to encrypt or decrypt", nargs="?"
+    )
+    mode.add_argument("-p", "--path", help="Database path to decrypt", nargs="?")
+    parser.add_argument(
+        "-d", "--decrypt", help="Whatsapp Key path or 64 hex chars (Decrypt database)"
+    )
+    parser.add_argument(
+        "-e", "--encrypt", help="Whatsapp Key path or 64 hex chars (Encrypt database)"
+    )
     parser.add_argument("-o", "--output", help="Database output file or path")
 
     if len(sys.argv) == 1:
-        banner(); help(); parser.print_help(); sys.exit(0)
+        banner()
+        help()
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args()
     banner()
@@ -380,18 +410,20 @@ def main():
         elif args.file:
             if args.decrypt:
                 decrypt(args.file, args.decrypt, args.output)
-                print("[-] {} descifrado -> {}".format(args.file, args.output))
+                print(f"[-] {args.file} descifrado -> {args.output}")
             elif args.encrypt:
                 encrypt(args.file, args.encrypt, args.output)
-                print("[-] {} cifrado -> {}".format(args.file, args.output))
-                print("[i] El resultado es un backup generado por whapa; "
-                      "documenta su procedencia si lo aportas a un procedimiento.")
+                print(f"[-] {args.file} cifrado -> {args.output}")
+                print(
+                    "[i] El resultado es un backup generado por whapa; "
+                    "documenta su procedencia si lo aportas a un procedimiento."
+                )
             else:
                 sys.exit("[e] Indica -d para descifrar o -e para cifrar")
         else:
             sys.exit("[e] Indica un archivo con -f o un directorio con -p")
     except Exception as e:
-        sys.exit("[e] {}".format(e))
+        sys.exit(f"[e] {e}")
 
 
 if __name__ == "__main__":

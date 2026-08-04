@@ -1,4 +1,5 @@
 import pytest
+
 from libs.gpsoauth.util import bytes_to_int, int_to_bytes
 
 

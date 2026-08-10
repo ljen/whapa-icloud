@@ -4234,7 +4234,7 @@ if __name__ == "__main__":
                     for i in chats_live:
                         sql_string_copy = sql_string
 
-                        chat_count = sum(v for k, v in counts_by_jid.items() if i in k)
+                        chat_count = counts_by_jid.get(i, 0)
 
                         if i.split("@")[1] == "g.us":
                             if report_var == "EN":

@@ -3856,7 +3856,7 @@ def info(opt, local):
         sql_string_consult = (
             "SELECT raw_string_jid FROM chat_view ORDER BY sort_timestamp DESC"
         )
-        sql_consult_chat = cursor.execute(sql_string_consult)
+        sql_consult_chat = cursor.execute(sql_string_consult).fetchall()
         for i in sql_consult_chat:
             show = i[0]
             if str(i[0]).split("@")[1] == "s.whatsapp.net":
@@ -4213,10 +4213,8 @@ if __name__ == "__main__":
                 elif args.all:
                     get_configs()
                     sql_string_consult = "SELECT raw_string_jid FROM chat_view ORDER BY sort_timestamp DESC"
-                    sql_consult_chat = cursor.execute(sql_string_consult)
-                    chats_live = []
-                    for i in sql_consult_chat:
-                        chats_live.append(i[0])
+                    sql_consult_chat = cursor.execute(sql_string_consult).fetchall()
+                    chats_live = [i[0] for i in sql_consult_chat]
                     report_med = " "
                     print("Loading data ...")
 

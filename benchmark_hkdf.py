@@ -1,4 +1,3 @@
-import timeit
 import hashlib
 import hmac
 import time

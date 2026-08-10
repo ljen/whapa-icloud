@@ -5,7 +5,7 @@ import sys
 # Add the parent directory to the path so we can import libs
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1
+from libs.whacloud import _pkcs7_strip, _safe_join, hkdf_v1, derive_tar_key
 
 
 class TestHkdfV1(unittest.TestCase):
@@ -118,6 +118,23 @@ class TestSafeJoin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _safe_join(self.base_dir, "dir/../../escape.txt")
         self.assertIn("Refusing path that escapes output dir", str(context.exception))
+
+
+class TestDeriveTarKey(unittest.TestCase):
+    def test_derive_tar_key_known_output(self):
+        # Known answer test to ensure deterministic output for derive_tar_key
+        backup_key = b"A" * 32
+        expected_hex = (
+            "8dad3adede49eade8fd70c922c2f220ceb11b053765e277ed49508e1f6b80a68"
+        )
+        out = derive_tar_key(backup_key)
+        self.assertEqual(out.hex(), expected_hex)
+
+    def test_derive_tar_key_length(self):
+        # Verify the output is always 32 bytes as hardcoded in the function
+        backup_key = b"A" * 32
+        out = derive_tar_key(backup_key)
+        self.assertEqual(len(out), 32)
 
 
 if __name__ == "__main__":
